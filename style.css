@@ -1,0 +1,269 @@
+* {
+  box-sizing: border-box;
+}
+
+:root {
+  --bg: #11100f;
+  --panel: #1b1917;
+  --panel-soft: #24211e;
+  --text: #f4efe7;
+  --muted: #b8ada0;
+  --line: #3a342e;
+  --accent: #d8c7a2;
+  --accent-strong: #f2dfb3;
+}
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top, rgba(255,255,255,0.04), transparent 32rem),
+    var(--bg);
+  color: var(--text);
+  font-family: "Noto Serif SC", "Songti SC", "STSong", Georgia, serif;
+}
+
+body {
+  min-height: 100vh;
+}
+
+button {
+  font: inherit;
+}
+
+.game-shell {
+  width: min(980px, calc(100% - 28px));
+  margin: 0 auto;
+  padding: 28px 0 48px;
+}
+
+.game-card {
+  border: 1px solid var(--line);
+  background: rgba(27,25,23,0.96);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.38);
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: flex-start;
+  padding: 26px 28px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.eyebrow {
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.18em;
+  margin-bottom: 8px;
+}
+
+h1, h2, p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 0;
+  font-size: clamp(28px, 5vw, 46px);
+  font-weight: 600;
+}
+
+.ghost-button {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 10px 14px;
+  cursor: pointer;
+}
+
+.ghost-button:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.status-panel {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  border-bottom: 1px solid var(--line);
+}
+
+.status-item {
+  min-width: 0;
+  padding: 15px 18px;
+  border-right: 1px solid var(--line);
+}
+
+.status-item:last-child {
+  border-right: 0;
+}
+
+.status-item span,
+.status-item strong {
+  display: block;
+}
+
+.status-item span {
+  color: var(--muted);
+  font-size: 12px;
+  margin-bottom: 5px;
+}
+
+.status-item strong {
+  font-size: 15px;
+  overflow-wrap: anywhere;
+}
+
+.visual-slot {
+  padding: 20px 28px 0;
+}
+
+.visual-placeholder {
+  min-height: 150px;
+  border: 1px dashed #554d45;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 24px;
+  color: var(--muted);
+  background:
+    linear-gradient(135deg, rgba(255,255,255,0.025), transparent),
+    var(--panel-soft);
+}
+
+.visual-placeholder span {
+  display: block;
+  letter-spacing: 0.18em;
+  font-size: 12px;
+  margin-bottom: 7px;
+}
+
+.visual-placeholder small {
+  display: block;
+  font-size: 12px;
+}
+
+.story-box {
+  padding: 28px 28px 8px;
+  min-height: 190px;
+}
+
+.story-box p {
+  line-height: 1.95;
+  font-size: 17px;
+  margin-bottom: 18px;
+}
+
+.story-box .system-note {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.choices-box {
+  display: grid;
+  gap: 12px;
+  padding: 16px 28px 30px;
+}
+
+.choice-button {
+  width: 100%;
+  text-align: left;
+  padding: 16px 18px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  color: var(--text);
+  background: var(--panel-soft);
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+}
+
+.choice-button:hover {
+  transform: translateY(-1px);
+  border-color: var(--accent);
+  background: #2b2723;
+}
+
+.choice-meta {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 6px;
+  line-height: 1.55;
+}
+
+.debug-panel {
+  padding: 0 28px 28px;
+  color: var(--muted);
+}
+
+.debug-panel details {
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.debug-panel summary {
+  cursor: pointer;
+}
+
+.debug-panel pre {
+  white-space: pre-wrap;
+  background: #12110f;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  overflow: auto;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,0.68);
+  padding: 20px;
+}
+
+.hidden {
+  display: none;
+}
+
+.modal-card {
+  width: min(460px, 100%);
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.55);
+}
+
+.modal-card .choice-button {
+  margin-top: 10px;
+  text-align: center;
+}
+
+@media (max-width: 760px) {
+  .status-panel {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .status-item:nth-child(2) {
+    border-right: 0;
+  }
+
+  .status-item:nth-child(-n+2) {
+    border-bottom: 1px solid var(--line);
+  }
+
+  .topbar,
+  .story-box,
+  .choices-box,
+  .visual-slot,
+  .debug-panel {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+}
