@@ -26,6 +26,10 @@ const INITIAL_STATE = {
     satWithNate: null,
     nateFirstApproach: null,
 
+    ravenclawStartingBondApplied: false,
+    ravenclawBreakIceStyle: null,
+    ravenclawHogsmeadeQuestion: null,
+
     slytherinFirstView: null,
     slytherinSusannaDebate: null,
     slytherinSusannaOpeningLine: "",
@@ -40,11 +44,8 @@ const INITIAL_STATE = {
 let state = structuredClone(INITIAL_STATE);
 let currentSceneId = "opening";
 
-const STORAGE_KEYS = {
-  auto: "lisaNateHogwarts:auto:v1",
-  slotPrefix: "lisaNateHogwarts:slot:v1:",
-};
-
+const AUTOSAVE_KEY = "lisaNateHogwarts_autosave_v1";
+const SAVE_SLOT_PREFIX = "lisaNateHogwarts_save_v1_slot_";
 const SAVE_SLOT_COUNT = 6;
 
 const HOUSE_NAMES = {
@@ -78,14 +79,11 @@ const customLineInput = document.querySelector("#custom-line-input");
 const themeButton = document.querySelector("#theme-button");
 const menuButton = document.querySelector("#menu-button");
 
-const gameMenu = document.querySelector("#game-menu");
-const menuBackdrop = document.querySelector("#menu-backdrop");
-const menuClose = document.querySelector("#menu-close");
-const menuTabs = [...document.querySelectorAll(".menu-tab")];
-const menuViews = [...document.querySelectorAll(".menu-view")];
-const saveSlotsBox = document.querySelector("#save-slots");
-const loadSlotsBox = document.querySelector("#load-slots");
+const menuDrawer = document.querySelector("#menu-drawer");
+const drawerBackdrop = document.querySelector("#drawer-backdrop");
+const drawerClose = document.querySelector("#drawer-close");
 const restartButton = document.querySelector("#restart-button");
+const saveSlots = document.querySelector("#save-slots");
 
 const statusName = document.querySelector("#status-name");
 const statusBirthday = document.querySelector("#status-birthday");
@@ -173,347 +171,236 @@ function chooseHouse(house) {
   updateStatusPanel();
 }
 
-themeButton.addEventListener("click", () => {
-  state.ui.usingNeutralTheme = !state.ui.usingNeutralTheme;
-  applyTheme();
-  persistAutoProgress();
-});
-
-function openMenu(tab = "status") {
-  updateStatusPanel();
-  renderSaveSlots();
-  switchMenuTab(tab);
-  gameMenu.classList.add("open");
-  gameMenu.setAttribute("aria-hidden", "false");
-}
-
-function closeMenu() {
-  gameMenu.classList.remove("open");
-  gameMenu.setAttribute("aria-hidden", "true");
-}
-
-function switchMenuTab(tabName) {
-  menuTabs.forEach((button) => {
-    button.classList.toggle("active", button.dataset.menuTab === tabName);
-  });
-
-  menuViews.forEach((view) => {
-    view.classList.toggle("active", view.dataset.menuView === tabName);
-  });
-
-  if (tabName === "save" || tabName === "load") {
-    renderSaveSlots();
+function ensureRavenclawStartingBond() {
+  if (!state.choices.ravenclawStartingBondApplied) {
+    addAffection("nate", 30);
+    state.choices.ravenclawStartingBondApplied = true;
   }
 }
 
-menuButton.addEventListener("click", () => openMenu("status"));
-menuBackdrop.addEventListener("click", closeMenu);
-menuClose.addEventListener("click", closeMenu);
-
-menuTabs.forEach((button) => {
-  button.addEventListener("click", () => {
-    switchMenuTab(button.dataset.menuTab);
-  });
+themeButton.addEventListener("click", () => {
+  state.ui.usingNeutralTheme = !state.ui.usingNeutralTheme;
+  applyTheme();
 });
 
-function cloneSerializable(value) {
-  return JSON.parse(JSON.stringify(value));
+menuButton.addEventListener("click", () => {
+  updateStatusPanel();
+  renderSaveSlots();
+  menuDrawer.classList.add("open");
+  menuDrawer.setAttribute("aria-hidden", "false");
+});
+
+function closeDrawer() {
+  menuDrawer.classList.remove("open");
+  menuDrawer.setAttribute("aria-hidden", "true");
 }
 
-function makeSnapshot() {
+drawerBackdrop.addEventListener("click", closeDrawer);
+drawerClose.addEventListener("click", closeDrawer);
+
+restartButton.addEventListener("click", () => {
+  const ok = window.confirm("回到开头？当前自动进度会被重置，但六个手动存档不会删除。");
+  if (!ok) return;
+
+  state = structuredClone(INITIAL_STATE);
+  currentSceneId = "opening";
+  localStorage.removeItem(AUTOSAVE_KEY);
+  closeDrawer();
+  applyTheme();
+  updateStatusPanel();
+  renderScene("opening");
+});
+
+
+function cloneStateForStorage() {
+  return JSON.parse(JSON.stringify(state));
+}
+
+function makeSavePayload(sceneId = currentSceneId) {
   return {
     version: 1,
-    sceneId: currentSceneId,
-    state: cloneSerializable(state),
+    sceneId,
+    state: cloneStateForStorage(),
     savedAt: new Date().toISOString(),
   };
 }
 
-function safeParse(raw) {
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
+function isValidSavePayload(payload) {
+  return Boolean(
+    payload &&
+    typeof payload === "object" &&
+    typeof payload.sceneId === "string" &&
+    payload.state &&
+    typeof payload.state === "object"
+  );
 }
 
-function persistAutoProgress() {
+function writeAutosave() {
   try {
-    localStorage.setItem(STORAGE_KEYS.auto, JSON.stringify(makeSnapshot()));
-    showAutosaveIndicator();
+    localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(makeSavePayload()));
   } catch (error) {
     console.warn("自动保存失败：", error);
   }
 }
 
-function readAutoProgress() {
+function readSave(key) {
   try {
-    return safeParse(localStorage.getItem(STORAGE_KEYS.auto));
-  } catch {
-    return null;
-  }
-}
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
 
-function slotKey(slotNumber) {
-  return `${STORAGE_KEYS.slotPrefix}${slotNumber}`;
-}
-
-function readSlot(slotNumber) {
-  try {
-    return safeParse(localStorage.getItem(slotKey(slotNumber)));
-  } catch {
-    return null;
-  }
-}
-
-function writeSlot(slotNumber) {
-  const existing = readSlot(slotNumber);
-
-  if (
-    existing &&
-    !window.confirm(`档位 ${slotNumber} 已有存档。要覆盖它吗？`)
-  ) {
-    return;
-  }
-
-  try {
-    localStorage.setItem(slotKey(slotNumber), JSON.stringify(makeSnapshot()));
-    renderSaveSlots();
+    const parsed = JSON.parse(raw);
+    return isValidSavePayload(parsed) ? parsed : null;
   } catch (error) {
-    window.alert("存档失败。浏览器可能禁止了本地存储。");
-    console.error(error);
+    console.warn("读取存档失败：", error);
+    return null;
   }
 }
 
-function deleteSlot(slotNumber) {
-  const existing = readSlot(slotNumber);
-  if (!existing) return;
+function restoreSave(payload) {
+  if (!isValidSavePayload(payload) || !scenes[payload.sceneId]) return false;
 
-  if (!window.confirm(`确定删除档位 ${slotNumber} 吗？`)) return;
+  state = payload.state;
+  currentSceneId = payload.sceneId;
 
-  localStorage.removeItem(slotKey(slotNumber));
-  renderSaveSlots();
-}
-
-function mergeLoadedState(savedState) {
-  const base = structuredClone(INITIAL_STATE);
-
-  return {
-    ...base,
-    ...savedState,
-    player: {
-      ...base.player,
-      ...(savedState?.player || {}),
-    },
-    affection: {
-      ...base.affection,
-      ...(savedState?.affection || {}),
-    },
-    peakAffection: {
-      ...base.peakAffection,
-      ...(savedState?.peakAffection || {}),
-    },
-    choices: {
-      ...base.choices,
-      ...(savedState?.choices || {}),
-    },
-    ui: {
-      ...base.ui,
-      ...(savedState?.ui || {}),
-    },
-  };
-}
-
-function restoreSnapshot(snapshot, { persist = true } = {}) {
-  if (!snapshot || !snapshot.sceneId || !scenes[snapshot.sceneId]) {
-    return false;
-  }
-
-  state = mergeLoadedState(snapshot.state || {});
-  currentSceneId = snapshot.sceneId;
+  // 为以后新增字段留一点兼容空间。
+  state.ui = state.ui || { usingNeutralTheme: !state.player?.house };
+  state.player = state.player || structuredClone(INITIAL_STATE.player);
+  state.affection = state.affection || structuredClone(INITIAL_STATE.affection);
+  state.peakAffection =
+    state.peakAffection || structuredClone(INITIAL_STATE.peakAffection);
+  state.choices = state.choices || structuredClone(INITIAL_STATE.choices);
 
   applyTheme();
   updateStatusPanel();
-  renderScene(currentSceneId, { persist });
-
+  renderScene(currentSceneId);
   return true;
 }
 
-function loadSlot(slotNumber) {
-  const snapshot = readSlot(slotNumber);
-  if (!snapshot) return;
-
-  if (!window.confirm(`读取档位 ${slotNumber}？当前未手动存档的进度会被替换。`)) {
-    return;
-  }
-
-  closeMenu();
-  restoreSnapshot(snapshot, { persist: true });
-}
-
 function formatSaveTime(isoString) {
-  if (!isoString) return "时间未知";
-
-  const date = new Date(isoString);
-  if (Number.isNaN(date.getTime())) return "时间未知";
-
-  return new Intl.DateTimeFormat("zh-CN", {
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
+  try {
+    const date = new Date(isoString);
+    return date.toLocaleString("zh-CN", {
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return "";
+  }
 }
 
 function sceneDisplayName(sceneId) {
   const scene = scenes[sceneId];
-  if (!scene) return sceneId || "未知位置";
+  if (!scene) return sceneId;
 
-  return scene.chapter || scene.title || "剧情进行中";
+  const chapter = scene.chapter || "";
+  const title = scene.title || "";
+  return [chapter, title].filter(Boolean).join(" · ") || "故事中";
 }
 
-function playerNameFromSnapshot(snapshot) {
-  const player = snapshot?.state?.player || {};
-  const name = [player.firstName, player.lastName]
-    .filter(Boolean)
-    .join(" ")
-    .trim();
+function saveToSlot(slotNumber) {
+  const key = SAVE_SLOT_PREFIX + slotNumber;
+  const oldSave = readSave(key);
 
-  return name || "未命名";
+  if (oldSave) {
+    const overwrite = window.confirm(`覆盖存档 ${slotNumber}？`);
+    if (!overwrite) return;
+  }
+
+  localStorage.setItem(key, JSON.stringify(makeSavePayload()));
+  renderSaveSlots();
 }
 
-function houseNameFromSnapshot(snapshot) {
-  const house = snapshot?.state?.player?.house;
-  return house ? HOUSE_NAMES[house] : "未分院";
+function loadFromSlot(slotNumber) {
+  const key = SAVE_SLOT_PREFIX + slotNumber;
+  const payload = readSave(key);
+  if (!payload) return;
+
+  const ok = window.confirm(`读取存档 ${slotNumber}？当前未手动保存的进度会被替换。`);
+  if (!ok) return;
+
+  closeDrawer();
+  restoreSave(payload);
 }
 
-function createSlotCard(slotNumber, mode) {
-  const snapshot = readSlot(slotNumber);
+function deleteSlot(slotNumber) {
+  const key = SAVE_SLOT_PREFIX + slotNumber;
+  const payload = readSave(key);
+  if (!payload) return;
 
-  const card = document.createElement("article");
-  card.className = "save-slot";
+  const ok = window.confirm(`删除存档 ${slotNumber}？`);
+  if (!ok) return;
 
-  const header = document.createElement("div");
-  header.className = "save-slot-header";
-
-  const slotLabel = document.createElement("span");
-  slotLabel.className = "save-slot-number";
-  slotLabel.textContent = `SLOT ${String(slotNumber).padStart(2, "0")}`;
-
-  const title = document.createElement("strong");
-  title.className = "save-slot-title";
-  title.textContent = snapshot ? playerNameFromSnapshot(snapshot) : "空档位";
-
-  header.append(slotLabel, title);
-  card.appendChild(header);
-
-  if (snapshot) {
-    const meta = document.createElement("div");
-    meta.className = "save-slot-meta";
-
-    const line1 = document.createElement("span");
-    line1.textContent = `${houseNameFromSnapshot(snapshot)} · ${sceneDisplayName(snapshot.sceneId)}`;
-
-    const line2 = document.createElement("span");
-    line2.textContent = `保存于 ${formatSaveTime(snapshot.savedAt)}`;
-
-    meta.append(line1, line2);
-    card.appendChild(meta);
-  } else {
-    const empty = document.createElement("p");
-    empty.className = "save-slot-empty";
-    empty.textContent = "这里还没有存档。";
-    card.appendChild(empty);
-  }
-
-  const actions = document.createElement("div");
-  actions.className = "save-slot-actions";
-
-  if (mode === "save") {
-    const saveButton = document.createElement("button");
-    saveButton.type = "button";
-    saveButton.className = "slot-button primary";
-    saveButton.textContent = snapshot ? "覆盖" : "保存";
-    saveButton.addEventListener("click", () => writeSlot(slotNumber));
-    actions.appendChild(saveButton);
-  }
-
-  if (mode === "load") {
-    const loadButton = document.createElement("button");
-    loadButton.type = "button";
-    loadButton.className = "slot-button primary";
-    loadButton.textContent = "读取";
-    loadButton.disabled = !snapshot;
-    loadButton.addEventListener("click", () => loadSlot(slotNumber));
-    actions.appendChild(loadButton);
-  }
-
-  const deleteButton = document.createElement("button");
-  deleteButton.type = "button";
-  deleteButton.className = "slot-button danger";
-  deleteButton.textContent = "删除";
-  deleteButton.disabled = !snapshot;
-  deleteButton.addEventListener("click", () => deleteSlot(slotNumber));
-  actions.appendChild(deleteButton);
-
-  card.appendChild(actions);
-  return card;
+  localStorage.removeItem(key);
+  renderSaveSlots();
 }
 
 function renderSaveSlots() {
-  saveSlotsBox.innerHTML = "";
-  loadSlotsBox.innerHTML = "";
+  saveSlots.innerHTML = "";
 
-  for (let slot = 1; slot <= SAVE_SLOT_COUNT; slot += 1) {
-    saveSlotsBox.appendChild(createSlotCard(slot, "save"));
-    loadSlotsBox.appendChild(createSlotCard(slot, "load"));
+  for (let slot = 1; slot <= SAVE_SLOT_COUNT; slot++) {
+    const payload = readSave(SAVE_SLOT_PREFIX + slot);
+    const card = document.createElement("div");
+    card.className = "save-slot";
+
+    const top = document.createElement("div");
+    top.className = "save-slot-top";
+
+    const info = document.createElement("div");
+    const title = document.createElement("p");
+    title.className = "save-slot-title";
+    title.textContent = `存档 ${slot}`;
+
+    const meta = document.createElement("p");
+    meta.className = "save-slot-meta";
+
+    if (payload) {
+      const savedState = payload.state || {};
+      const player = savedState.player || {};
+      const savedName = [player.firstName, player.lastName].filter(Boolean).join(" ");
+      const house = player.house ? HOUSE_NAMES[player.house] : "未分院";
+      meta.textContent =
+        `${savedName || "未命名"} · ${house} · ${sceneDisplayName(payload.sceneId)} · ${formatSaveTime(payload.savedAt)}`;
+    } else {
+      meta.textContent = "空档位";
+    }
+
+    info.appendChild(title);
+    info.appendChild(meta);
+    top.appendChild(info);
+    card.appendChild(top);
+
+    const actions = document.createElement("div");
+    actions.className = "save-slot-actions";
+
+    const saveButton = document.createElement("button");
+    saveButton.className = "slot-button";
+    saveButton.type = "button";
+    saveButton.textContent = payload ? "覆盖" : "存档";
+    saveButton.addEventListener("click", () => saveToSlot(slot));
+    actions.appendChild(saveButton);
+
+    const loadButton = document.createElement("button");
+    loadButton.className = "slot-button";
+    loadButton.type = "button";
+    loadButton.textContent = "读档";
+    loadButton.disabled = !payload;
+    loadButton.addEventListener("click", () => loadFromSlot(slot));
+    actions.appendChild(loadButton);
+
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "slot-button";
+    deleteButton.type = "button";
+    deleteButton.textContent = "删除";
+    deleteButton.disabled = !payload;
+    deleteButton.addEventListener("click", () => deleteSlot(slot));
+    actions.appendChild(deleteButton);
+
+    card.appendChild(actions);
+    saveSlots.appendChild(card);
   }
 }
-
-let autosaveIndicatorTimer = null;
-
-function showAutosaveIndicator() {
-  let indicator = document.querySelector("#autosave-indicator");
-
-  if (!indicator) {
-    indicator = document.createElement("div");
-    indicator.id = "autosave-indicator";
-    indicator.className = "autosave-indicator";
-    indicator.textContent = "AUTO SAVE";
-    document.body.appendChild(indicator);
-  }
-
-  indicator.classList.add("visible");
-
-  clearTimeout(autosaveIndicatorTimer);
-  autosaveIndicatorTimer = setTimeout(() => {
-    indicator.classList.remove("visible");
-  }, 900);
-}
-
-function restartGame() {
-  if (
-    !window.confirm(
-      "确定回到游戏开头吗？当前进行中的自动进度会被重置，但六个手动存档会保留。"
-    )
-  ) {
-    return;
-  }
-
-  state = structuredClone(INITIAL_STATE);
-  currentSceneId = "opening";
-
-  try {
-    localStorage.removeItem(STORAGE_KEYS.auto);
-  } catch {}
-
-  closeMenu();
-  applyTheme();
-  updateStatusPanel();
-  renderScene("opening", { persist: true });
-}
-
-restartButton.addEventListener("click", restartGame);
 
 function showModal(title, text) {
   modalTitle.textContent = title;
@@ -523,35 +410,6 @@ function showModal(title, text) {
 
 modalClose.addEventListener("click", () => {
   modal.classList.add("hidden");
-});
-
-birthMonthInput.addEventListener("input", () => {
-  state.player.birthMonth = birthMonthInput.value
-    ? Number(birthMonthInput.value)
-    : null;
-  persistAutoProgress();
-});
-
-birthDayInput.addEventListener("input", () => {
-  state.player.birthDay = birthDayInput.value
-    ? Number(birthDayInput.value)
-    : null;
-  persistAutoProgress();
-});
-
-firstNameInput.addEventListener("input", () => {
-  state.player.firstName = firstNameInput.value;
-  persistAutoProgress();
-});
-
-lastNameInput.addEventListener("input", () => {
-  state.player.lastName = lastNameInput.value;
-  persistAutoProgress();
-});
-
-customLineInput.addEventListener("input", () => {
-  state.choices.slytherinSusannaOpeningLine = customLineInput.value;
-  persistAutoProgress();
 });
 
 birthdayForm.addEventListener("submit", (event) => {
@@ -636,7 +494,7 @@ function makeChoiceButton(choice) {
   return button;
 }
 
-function renderScene(sceneId, { persist = true } = {}) {
+function renderScene(sceneId) {
   const scene = scenes[sceneId];
 
   if (!scene) {
@@ -670,16 +528,6 @@ function renderScene(sceneId, { persist = true } = {}) {
     sceneId !== "slytherinSusannaPlayerLine"
   );
 
-  if (sceneId === "birthdayScene") {
-    birthMonthInput.value = state.player.birthMonth || "";
-    birthDayInput.value = state.player.birthDay || "";
-  }
-
-  if (sceneId === "nameScene") {
-    firstNameInput.value = state.player.firstName || "";
-    lastNameInput.value = state.player.lastName || "";
-  }
-
   if (sceneId === "slytherinSusannaPlayerLine") {
     customLineInput.value = state.choices.slytherinSusannaOpeningLine || "";
   }
@@ -691,10 +539,7 @@ function renderScene(sceneId, { persist = true } = {}) {
 
   window.scrollTo({ top: 0, behavior: "smooth" });
   updateStatusPanel();
-
-  if (persist) {
-    persistAutoProgress();
-  }
+  writeAutosave();
 }
 
 const scenes = {
@@ -826,7 +671,170 @@ const scenes = {
       {
         text: "继续",
         action: () => {
-          showModal("正在续写中...", "拉文克劳路线正在续写中...");
+          ensureRavenclawStartingBond();
+        },
+        next: "ravenclawIntro",
+      },
+    ],
+  },
+
+  ravenclawIntro: {
+    chapter: "RAVENCLAW",
+    title: "",
+    paragraphs: () => [
+      "仍需填入：一年级刚入学时，Nate 还没有认识跨院的 Lisa，你和 Nate 曾经非常亲密。",
+      "仍需填入：你和 Nate 都早慧，脑回路相似，那段关系有一种双生镜像般的感觉；你们曾经有过一丝成为挚友的机会。",
+      "仍需填入：后来 Nate 很快选择了 Lisa，那枚本来可能继续张开的珠蚌像是合上了。",
+      "仍需填入：你对 Lisa 的复杂感受——她更外放、更直观地有魅力，当然能吸引 Nate；你会艳羡、会嫉妒，也承认她确实有魅力，并知道 Nate 可以有她陪着。",
+      "仍需填入：这个已经错过的机会，在游戏主线这一学年重新出现。",
+    ],
+    choices: () => [
+      {
+        text: "继续",
+        next: "ravenclawClassGroup",
+      },
+    ],
+  },
+
+  ravenclawClassGroup: {
+    chapter: "RAVENCLAW · NATE",
+    title: "",
+    paragraphs: () => [
+      "仍需填入：开学后的一次课上，你和 Nate 被分到同一组。",
+      "仍需填入：短暂的尴尬与破冰前的课堂气氛。",
+      "Nate 主动找你说话。",
+      "你决定——",
+    ],
+    choices: () => [
+      {
+        text: "A. 回答她，冷酷的。",
+        action: () => {
+          state.choices.ravenclawBreakIceStyle = "cold";
+          addAffection("nate", 30);
+        },
+        next: "ravenclawColdReaction",
+      },
+      {
+        text: "B. 回答她，让她知道刚入学时转瞬即逝的友谊对自己没有产生任何影响。",
+        action: () => {
+          state.choices.ravenclawBreakIceStyle = "unaffected";
+          addAffection("nate", 30);
+        },
+        next: "ravenclawColdReaction",
+      },
+      {
+        text: "C. 回答她，并潇洒地说：“嘿，我知道这听起来很突然，等下你想一起去黑湖边散散步吗？别说你有其他计划，我会把你借走的……”而这一切都是为了不久后当 Lisa 不找她玩了，再狠狠离开她。",
+        action: () => {
+          state.choices.ravenclawBreakIceStyle = "black_lake_invite";
+          addAffection("nate", 30);
+        },
+        next: "ravenclawBlackLakeReaction",
+      },
+      {
+        text: "D. 不回答她，去和另一边的女生说话，并完全不注意她的动静。",
+        action: () => {
+          state.choices.ravenclawBreakIceStyle = "ignore";
+          addAffection("nate", 30);
+        },
+        next: "ravenclawIgnoredAfterClass",
+      },
+    ],
+  },
+
+  ravenclawColdReaction: {
+    chapter: "RAVENCLAW · NATE",
+    title: "",
+    paragraphs: () => [
+      "Nate 只是说了声“oh”，笑笑地看了你一眼，乖乖地回去做自己的了。",
+      "仍需填入：这里关于 Nate 本身魅力与形象的描写。",
+      "你继续想，刚刚那个约她一起的念头又冒出来了。看着她的样子，你竟然不再觉得这是愚蠢至极的，她看起来会答应任何事。",
+      "下课后，Nate 转过来问你：“hey，周日想一起去霍格莫德吃饭吗？”",
+    ],
+    choices: () => [
+      {
+        text: "继续",
+        next: "ravenclawHogsmeadeQuestion",
+      },
+    ],
+  },
+
+  ravenclawIgnoredAfterClass: {
+    chapter: "RAVENCLAW · NATE",
+    title: "",
+    paragraphs: () => [
+      "仍需填入：你整节课都没有再理会 Nate，也没有注意她的动静。",
+      "下课后，她却还是又一次试着破冰，问你：“hey，周日想一起去霍格莫德吃饭吗？”",
+    ],
+    choices: () => [
+      {
+        text: "继续",
+        next: "ravenclawHogsmeadeQuestion",
+      },
+    ],
+  },
+
+  ravenclawHogsmeadeQuestion: {
+    chapter: "RAVENCLAW · NATE",
+    title: "",
+    paragraphs: () => [],
+    choices: () => [
+      {
+        text: "A. 就我们俩？",
+        action: () => {
+          state.choices.ravenclawHogsmeadeQuestion = "just_us";
+        },
+        next: "ravenclawHogsmeadeAnswer",
+      },
+      {
+        text: "B. 那个谁不会也……",
+        action: () => {
+          state.choices.ravenclawHogsmeadeQuestion = "what_about_lisa";
+        },
+        next: "ravenclawHogsmeadeAnswer",
+      },
+    ],
+  },
+
+  ravenclawHogsmeadeAnswer: {
+    chapter: "RAVENCLAW · NATE / LISA",
+    title: "",
+    paragraphs: () => [
+      "Nate 说：“我们俩，和我的好朋友 Lisa 一起，她会超喜欢你的。”",
+      "仍需填入：你对这句话的即时反应，以及你和 Nate 从这里重新回到普通朋友关系的过渡。",
+      "仍需填入：之后 Nate 会逐渐邀请你和 Lisa 三个人一起行动，并与其他学院路线同步进入一些共同情节，例如霍格莫德村。",
+      "当前拉文克劳主线暂时写到这里。",
+    ],
+    choices: () => [
+      {
+        text: "结束当前版本",
+        action: () => {
+          showModal(
+            "正在续写中...",
+            "当前拉文克劳初遇主线已结束。后续剧情正在续写中..."
+          );
+        },
+      },
+    ],
+  },
+
+  ravenclawBlackLakeReaction: {
+    chapter: "RAVENCLAW · NATE",
+    title: "",
+    paragraphs: () => [
+      "Nate 罕见地露出一个灿烂的笑容：“我很乐意。”",
+      "她接着说，等周日，你们俩可以先去散步，然后还可以一起去找 Lisa，去霍格莫德三人一起小聚。",
+      "仍需填入：你看到 Nate 这个反应时的内心变化。",
+      "仍需填入：之后 Nate 和你逐渐回到普通朋友关系，并将你重新带入她与 Lisa 的共同活动中。",
+      "当前拉文克劳主线暂时写到这里。",
+    ],
+    choices: () => [
+      {
+        text: "结束当前版本",
+        action: () => {
+          showModal(
+            "正在续写中...",
+            "当前拉文克劳初遇主线已结束。后续剧情正在续写中..."
+          );
         },
       },
     ],
@@ -1405,12 +1413,10 @@ function evaluateEnding() {
   return "unresolved";
 }
 
-applyTheme();
-updateStatusPanel();
-renderSaveSlots();
+const autosave = readSave(AUTOSAVE_KEY);
 
-const autoProgress = readAutoProgress();
-
-if (!restoreSnapshot(autoProgress, { persist: false })) {
-  renderScene("opening", { persist: true });
+if (!autosave || !restoreSave(autosave)) {
+  applyTheme();
+  updateStatusPanel();
+  renderScene("opening");
 }

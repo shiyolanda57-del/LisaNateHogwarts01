@@ -19,7 +19,7 @@
         回到初始配色
       </button>
       <button id="menu-button" class="utility-button" type="button">
-        MENU
+        菜单
       </button>
     </div>
   </header>
@@ -108,26 +108,20 @@
     </article>
   </main>
 
-  <aside id="game-menu" class="drawer" aria-hidden="true">
-    <button id="menu-backdrop" class="drawer-backdrop" type="button" aria-label="关闭游戏菜单"></button>
+  <aside id="menu-drawer" class="drawer" aria-hidden="true">
+    <button id="drawer-backdrop" class="drawer-backdrop" type="button" aria-label="关闭菜单"></button>
 
-    <div class="drawer-panel menu-panel">
+    <div class="drawer-panel">
       <div class="drawer-header">
         <div>
           <div class="chapter-label">GAME MENU</div>
-          <h2>游戏菜单</h2>
+          <h2>菜单</h2>
         </div>
-        <button id="menu-close" class="close-button" type="button" aria-label="关闭">×</button>
+        <button id="drawer-close" class="close-button" type="button" aria-label="关闭">×</button>
       </div>
 
-      <nav class="menu-tabs" aria-label="游戏菜单分页">
-        <button class="menu-tab active" data-menu-tab="status" type="button">状态</button>
-        <button class="menu-tab" data-menu-tab="save" type="button">存档</button>
-        <button class="menu-tab" data-menu-tab="load" type="button">读档</button>
-        <button class="menu-tab" data-menu-tab="system" type="button">系统</button>
-      </nav>
-
-      <section class="menu-view active" data-menu-view="status">
+      <section class="menu-section">
+        <h3>当前状态</h3>
         <dl class="status-list">
           <div>
             <dt>姓名</dt>
@@ -154,32 +148,25 @@
             <dd id="status-nate">0</dd>
           </div>
         </dl>
-
-        <p class="drawer-note">
-          当前状态只会在你主动打开菜单时显示。剧情选项本身不会提示好感度变化。
-        </p>
       </section>
 
-      <section class="menu-view" data-menu-view="save">
-        <p class="menu-intro">选择一个档位保存当前进度。已有档位可以覆盖。</p>
+      <section class="menu-section">
+        <div class="menu-section-heading">
+          <h3>存档 / 读档</h3>
+          <span>6 个档位</span>
+        </div>
         <div id="save-slots" class="save-slots"></div>
       </section>
 
-      <section class="menu-view" data-menu-view="load">
-        <p class="menu-intro">选择一个已有存档，回到保存时的剧情位置。</p>
-        <div id="load-slots" class="save-slots"></div>
+      <section class="menu-section menu-actions">
+        <button id="restart-button" class="secondary-button danger-button" type="button">
+          回到开头
+        </button>
       </section>
 
-      <section class="menu-view" data-menu-view="system">
-        <div class="system-actions">
-          <button id="restart-button" class="menu-action-button danger" type="button">
-            回到开头
-          </button>
-          <p class="drawer-note">
-            回到开头只会重置当前进行中的游戏，不会删除六个手动存档。
-          </p>
-        </div>
-      </section>
+      <p class="drawer-note">
+        游戏会自动记住当前进度。刷新页面后会回到你最近停留的位置；手动存档不会因“回到开头”而删除。
+      </p>
     </div>
   </aside>
 
