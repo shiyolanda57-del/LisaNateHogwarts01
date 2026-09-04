@@ -1,6 +1,10 @@
 const INITIAL_STATE = {
-  house: null,
-  bloodStatus: null,
+  player: {
+    firstName: "",
+    lastName: "",
+    house: null,
+    bloodStatus: null,
+  },
 
   affection: {
     lisa: 0,
@@ -20,33 +24,58 @@ const INITIAL_STATE = {
     satWithNate: null,
     nateFirstApproach: null,
   },
+
+  ui: {
+    usingNeutralTheme: true,
+  },
 };
 
 let state = structuredClone(INITIAL_STATE);
 
+const HOUSE_NAMES = {
+  gryffindor: "格兰芬多",
+  ravenclaw: "拉文克劳",
+  hufflepuff: "赫奇帕奇",
+  slytherin: "斯莱特林",
+};
+
+const BLOOD_NAMES = {
+  pureblood: "纯血家族",
+  muggleborn: "麻瓜出身",
+};
+
 const sceneTitle = document.querySelector("#scene-title");
+const chapterLabel = document.querySelector("#chapter-label");
 const storyBox = document.querySelector("#story-box");
 const choicesBox = document.querySelector("#choices-box");
 
+const nameForm = document.querySelector("#name-form");
+const firstNameInput = document.querySelector("#first-name");
+const lastNameInput = document.querySelector("#last-name");
+
+const themeButton = document.querySelector("#theme-button");
+const statusButton = document.querySelector("#status-button");
+
+const statusDrawer = document.querySelector("#status-drawer");
+const drawerBackdrop = document.querySelector("#drawer-backdrop");
+const drawerClose = document.querySelector("#drawer-close");
+
+const statusName = document.querySelector("#status-name");
 const statusHouse = document.querySelector("#status-house");
 const statusBlood = document.querySelector("#status-blood");
 const statusLisa = document.querySelector("#status-lisa");
 const statusNate = document.querySelector("#status-nate");
-const debugState = document.querySelector("#debug-state");
 
 const modal = document.querySelector("#modal");
 const modalTitle = document.querySelector("#modal-title");
 const modalText = document.querySelector("#modal-text");
 const modalClose = document.querySelector("#modal-close");
 
-document.querySelector("#reset-button").addEventListener("click", () => {
-  state = structuredClone(INITIAL_STATE);
-  renderScene("houseSelection");
-});
-
-modalClose.addEventListener("click", () => {
-  modal.classList.add("hidden");
-});
+function fullName() {
+  const first = state.player.firstName.trim();
+  const last = state.player.lastName.trim();
+  return [first, last].filter(Boolean).join(" ");
+}
 
 function addAffection(character, amount) {
   state.affection[character] += amount;
@@ -54,33 +83,84 @@ function addAffection(character, amount) {
     state.peakAffection[character],
     state.affection[character]
   );
+  updateStatusPanel();
 }
 
-function updateStatus() {
-  const houseMap = {
-    gryffindor: "格兰芬多",
-    ravenclaw: "拉文克劳",
-    hufflepuff: "赫奇帕奇",
-    slytherin: "斯莱特林",
-  };
-
-  const bloodMap = {
-    pureblood: "纯血家族",
-    muggleborn: "麻瓜出身",
-  };
-
-  statusHouse.textContent = state.house ? houseMap[state.house] : "未选择";
-  statusBlood.textContent = state.bloodStatus ? bloodMap[state.bloodStatus] : "未确定";
+function updateStatusPanel() {
+  statusName.textContent = fullName() || "未填写";
+  statusHouse.textContent = state.player.house
+    ? HOUSE_NAMES[state.player.house]
+    : "未选择";
+  statusBlood.textContent = state.player.bloodStatus
+    ? BLOOD_NAMES[state.player.bloodStatus]
+    : "未确定";
   statusLisa.textContent = state.affection.lisa;
   statusNate.textContent = state.affection.nate;
-  debugState.textContent = JSON.stringify(state, null, 2);
+
+  statusButton.classList.toggle("hidden", !fullName());
+  themeButton.classList.toggle("hidden", !state.player.house);
 }
+
+function applyTheme() {
+  if (!state.player.house || state.ui.usingNeutralTheme) {
+    document.body.dataset.theme = "neutral";
+    themeButton.textContent = state.player.house ? "恢复学院配色" : "回到初始配色";
+    return;
+  }
+
+  document.body.dataset.theme = state.player.house;
+  themeButton.textContent = "回到初始配色";
+}
+
+function chooseHouse(house) {
+  state.player.house = house;
+  state.ui.usingNeutralTheme = false;
+  applyTheme();
+  updateStatusPanel();
+}
+
+themeButton.addEventListener("click", () => {
+  state.ui.usingNeutralTheme = !state.ui.usingNeutralTheme;
+  applyTheme();
+});
+
+statusButton.addEventListener("click", () => {
+  updateStatusPanel();
+  statusDrawer.classList.add("open");
+  statusDrawer.setAttribute("aria-hidden", "false");
+});
+
+function closeDrawer() {
+  statusDrawer.classList.remove("open");
+  statusDrawer.setAttribute("aria-hidden", "true");
+}
+
+drawerBackdrop.addEventListener("click", closeDrawer);
+drawerClose.addEventListener("click", closeDrawer);
 
 function showModal(title, text) {
   modalTitle.textContent = title;
   modalText.textContent = text;
   modal.classList.remove("hidden");
 }
+
+modalClose.addEventListener("click", () => {
+  modal.classList.add("hidden");
+});
+
+nameForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const firstName = firstNameInput.value.trim();
+  const lastName = lastNameInput.value.trim();
+
+  if (!firstName || !lastName) return;
+
+  state.player.firstName = firstName;
+  state.player.lastName = lastName;
+  updateStatusPanel();
+  renderScene("afterName");
+});
 
 function makeChoiceButton(choice) {
   const button = document.createElement("button");
@@ -91,11 +171,13 @@ function makeChoiceButton(choice) {
   label.textContent = choice.text;
   button.appendChild(label);
 
-  if (choice.meta) {
-    const meta = document.createElement("span");
-    meta.className = "choice-meta";
-    meta.textContent = choice.meta;
-    button.appendChild(meta);
+  // note 只用于必要的世界观 / 身份锁定提示。
+  // 不再显示“Lisa +30”“Nate +20”等好感变化。
+  if (choice.note) {
+    const note = document.createElement("span");
+    note.className = "choice-note";
+    note.textContent = choice.note;
+    button.appendChild(note);
   }
 
   button.addEventListener("click", () => {
@@ -114,63 +196,115 @@ function renderScene(sceneId) {
     return;
   }
 
-  sceneTitle.textContent = scene.title;
-  storyBox.innerHTML = "";
+  chapterLabel.textContent = scene.chapter || "";
+  sceneTitle.textContent = scene.title || "";
 
-  scene.paragraphs.forEach((text) => {
+  storyBox.innerHTML = "";
+  scene.paragraphs().forEach((text) => {
     const p = document.createElement("p");
     p.textContent = text;
-    if (text.startsWith("【")) p.classList.add("system-note");
     storyBox.appendChild(p);
   });
+
+  nameForm.classList.toggle("hidden", sceneId !== "nameScene");
 
   choicesBox.innerHTML = "";
   scene.choices().forEach((choice) => {
     choicesBox.appendChild(makeChoiceButton(choice));
   });
 
-  updateStatus();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+  updateStatusPanel();
 }
 
 const scenes = {
+  opening: {
+    chapter: "PROLOGUE",
+    title: "",
+    paragraphs: () => [
+      "仍需填入游戏开场文字。",
+      "仍需填入进入霍格沃茨世界前的故事性铺垫。",
+      "仍需填入自然过渡到询问玩家姓名的最后一句。",
+    ],
+    choices: () => [
+      {
+        text: "继续",
+        next: "nameScene",
+      },
+    ],
+  },
+
+  nameScene: {
+    chapter: "PROLOGUE",
+    title: "",
+    paragraphs: () => [
+      "仍需填入承接开场文字、自然询问玩家姓名的场景描写。",
+    ],
+    choices: () => [],
+  },
+
+  afterName: {
+    chapter: "PROLOGUE",
+    title: "",
+    paragraphs: () => [
+      `仍需填入：玩家以“${fullName()}”这个名字进入故事后的承接文字。`,
+      "仍需填入：从姓名确认自然过渡到霍格沃茨分院的场景描写。",
+    ],
+    choices: () => [
+      {
+        text: "继续",
+        next: "houseSelection",
+      },
+    ],
+  },
+
   houseSelection: {
-    title: "第一步：选择你的学院",
-    paragraphs: [
-      "仍需填入霍格沃茨开场与分院前场景描写。",
-      "仍需填入四个学院各自更完整的介绍。当前只有格兰芬多路线已开放。",
+    chapter: "SORTING",
+    title: "选择你的学院",
+    paragraphs: () => [
+      "仍需填入分院场景描写。",
+      "这里预留较多学院介绍空间；正式文字之后由你填写。",
     ],
     choices: () => [
       {
         text: "A. 格兰芬多",
-        meta: "当前已开放路线",
-        action: () => {
-          state.house = "gryffindor";
-        },
+        note: "仍需填入格兰芬多学院介绍。",
+        action: () => chooseHouse("gryffindor"),
         next: "gryffindorIntro",
       },
       {
         text: "B. 拉文克劳",
-        meta: "仍需填入拉文克劳路线",
-        action: () => showModal("正在续写中...", "拉文克劳路线正在续写中..."),
+        note: "仍需填入拉文克劳学院介绍。",
+        action: () => {
+          chooseHouse("ravenclaw");
+          showModal("正在续写中...", "拉文克劳路线正在续写中...");
+        },
       },
       {
         text: "C. 赫奇帕奇",
-        meta: "仍需填入赫奇帕奇路线",
-        action: () => showModal("正在续写中...", "赫奇帕奇路线正在续写中..."),
+        note: "仍需填入赫奇帕奇学院介绍。",
+        action: () => {
+          chooseHouse("hufflepuff");
+          showModal("正在续写中...", "赫奇帕奇路线正在续写中...");
+        },
       },
       {
         text: "D. 斯莱特林",
-        meta: "仍需填入斯莱特林路线",
-        action: () => showModal("正在续写中...", "斯莱特林路线正在续写中..."),
+        note: "仍需填入斯莱特林学院介绍。",
+        action: () => {
+          chooseHouse("slytherin");
+          showModal("正在续写中...", "斯莱特林路线正在续写中...");
+        },
       },
     ],
   },
 
   gryffindorIntro: {
-    title: "格兰芬多",
-    paragraphs: [
+    chapter: "GRYFFINDOR",
+    title: "",
+    paragraphs: () => [
       "仍需填入格兰芬多学院生活开场场景描写。",
-      "接下来，你会先在公共休息室注意到 Lisa Rowe。",
+      "仍需填入自然过渡到公共休息室、并让玩家注意到 Lisa Rowe 的文字。",
     ],
     choices: () => [
       {
@@ -181,8 +315,9 @@ const scenes = {
   },
 
   lisaCommonRoom: {
-    title: "公共休息室 · Lisa",
-    paragraphs: [
+    chapter: "GRYFFINDOR · LISA",
+    title: "公共休息室",
+    paragraphs: () => [
       "仍需填入：你第一次在格兰芬多公共休息室真正注意到 Lisa Rowe 的场景描写。",
       "仍需填入：Lisa 在众人面前展现出压倒性魅力，同时带有仗势欺人 / 残酷意味的具体事件。",
       "仍需填入：被她发难的人、周围人的反应、Lisa 的具体言行。",
@@ -191,7 +326,6 @@ const scenes = {
     choices: () => [
       {
         text: "A. 有些吓人，但反而很有魅力。",
-        meta: "Lisa 好感 +20",
         action: () => {
           state.choices.lisaFirstImpression = "intimidating_but_attractive";
           addAffection("lisa", 20);
@@ -200,7 +334,6 @@ const scenes = {
       },
       {
         text: "B. 太好了，很好，如果和她一起玩一定很开心。",
-        meta: "Lisa 好感 +30",
         action: () => {
           state.choices.lisaFirstImpression = "looks_fun";
           addAffection("lisa", 30);
@@ -209,7 +342,6 @@ const scenes = {
       },
       {
         text: "C. 这样做不太对，我要阻止她。",
-        meta: "Lisa 好感 +0",
         action: () => {
           state.choices.lisaFirstImpression = "this_is_wrong";
         },
@@ -219,15 +351,15 @@ const scenes = {
   },
 
   lisaInterveneChoice: {
-    title: "公共休息室 · 是否干预",
-    paragraphs: [
+    chapter: "GRYFFINDOR · LISA",
+    title: "",
+    paragraphs: () => [
       "仍需填入：Lisa 对那个人的发难继续发展的场景描写。",
-      "你现在可以选择是否干预。",
+      "你要插手吗？",
     ],
     choices: () => [
       {
         text: "A. 不干预。",
-        meta: "无事发生；当天结束",
         action: () => {
           state.choices.lisaIntervened = false;
         },
@@ -235,7 +367,6 @@ const scenes = {
       },
       {
         text: "B. 干预。",
-        meta: "进入三种不同干预方式",
         action: () => {
           state.choices.lisaIntervened = true;
         },
@@ -245,14 +376,14 @@ const scenes = {
   },
 
   lisaInterventionStyle: {
-    title: "公共休息室 · 你怎么做",
-    paragraphs: [
+    chapter: "GRYFFINDOR · LISA",
+    title: "",
+    paragraphs: () => [
       "仍需填入：你决定插手前的短暂场景描写。",
     ],
     choices: () => [
       {
         text: "A. 委婉地处理，没有驳她的面子，但救下了那个被发难的人。",
-        meta: "Lisa 好感 +30",
         action: () => {
           state.choices.lisaInterventionStyle = "diplomatic";
           addAffection("lisa", 30);
@@ -261,7 +392,6 @@ const scenes = {
       },
       {
         text: "B. 加入她，给她提供助力的小知识。",
-        meta: "Lisa 好感 +30",
         action: () => {
           state.choices.lisaInterventionStyle = "join";
           addAffection("lisa", 30);
@@ -270,7 +400,6 @@ const scenes = {
       },
       {
         text: "C. 直接站起来说你不能这样，把被发难的人护到身后。",
-        meta: "Lisa 好感 +30",
         action: () => {
           state.choices.lisaInterventionStyle = "confront";
           addAffection("lisa", 30);
@@ -281,8 +410,9 @@ const scenes = {
   },
 
   lisaReactionDiplomatic: {
-    title: "Lisa 的反应",
-    paragraphs: [
+    chapter: "GRYFFINDOR · LISA",
+    title: "",
+    paragraphs: () => [
       "仍需填入：当你委婉处理、既没有当众驳 Lisa 面子，又救下对方时，Lisa 的专属反应。",
       "仍需填入：你们因此正式认识 / 不打不相识的收束场景。",
     ],
@@ -295,8 +425,9 @@ const scenes = {
   },
 
   lisaReactionJoin: {
-    title: "Lisa 的反应",
-    paragraphs: [
+    chapter: "GRYFFINDOR · LISA",
+    title: "",
+    paragraphs: () => [
       "仍需填入：当你加入 Lisa，并用小知识给她提供助力时，Lisa 的专属反应。",
       "仍需填入：你们因此正式认识的收束场景。",
     ],
@@ -309,8 +440,9 @@ const scenes = {
   },
 
   lisaReactionConfront: {
-    title: "Lisa 的反应",
-    paragraphs: [
+    chapter: "GRYFFINDOR · LISA",
+    title: "",
+    paragraphs: () => [
       "仍需填入：当你直接站出来阻止 Lisa、把被发难的人护到身后时，Lisa 的专属反应。",
       "仍需填入：你们因此不打不相识、正式认识的收束场景。",
     ],
@@ -323,8 +455,9 @@ const scenes = {
   },
 
   lisaDayEnds: {
-    title: "这一天过去了",
-    paragraphs: [
+    chapter: "GRYFFINDOR · LISA",
+    title: "",
+    paragraphs: () => [
       "仍需填入：你没有干预之后，这一天如何自然结束的场景描写。",
       "你已经注意到了 Lisa，但这一次没有进一步插手。",
     ],
@@ -337,8 +470,9 @@ const scenes = {
   },
 
   afterLisaMeeting: {
-    title: "之后",
-    paragraphs: [
+    chapter: "GRYFFINDOR",
+    title: "",
+    paragraphs: () => [
       "仍需填入：从 Lisa 初遇过渡到之后与拉文克劳共同课程的时间推进。",
       "无论你之前以怎样的方式靠近她，你已经知道 Lisa 是谁了。",
     ],
@@ -351,17 +485,17 @@ const scenes = {
   },
 
   nateClassIntro: {
-    title: "格兰芬多 × 拉文克劳共课",
-    paragraphs: [
+    chapter: "GRYFFINDOR × RAVENCLAW",
+    title: "",
+    paragraphs: () => [
       "仍需填入：这门格兰芬多与拉文克劳共同课程的场景描写。",
       "仍需填入：你第一次看见 Nate Luo 时，她本身的魅力给你留下的第一印象。",
-      "真正让你后来着迷的，会是她身上的反差，以及她对你的好。",
+      "后来真正让你着迷的，会是她身上的反差，以及她对你的好。",
       "现在，你可以决定要不要坐到她旁边。",
     ],
     choices: () => [
       {
         text: "A. 坐到她旁边。",
-        meta: "Nate 好感 +30",
         action: () => {
           state.choices.satWithNate = true;
           addAffection("nate", 30);
@@ -370,7 +504,6 @@ const scenes = {
       },
       {
         text: "B. 不坐她旁边。",
-        meta: "无事发生",
         action: () => {
           state.choices.satWithNate = false;
         },
@@ -380,8 +513,9 @@ const scenes = {
   },
 
   nateNoSit: {
-    title: "你没有坐过去",
-    paragraphs: [
+    chapter: "GRYFFINDOR × RAVENCLAW",
+    title: "",
+    paragraphs: () => [
       "仍需填入：你没有坐到 Nate 旁边后，这节课如何自然继续。",
       "这一次，没有进一步的接近发生。",
     ],
@@ -394,15 +528,15 @@ const scenes = {
   },
 
   nateApproach: {
-    title: "你坐到了 Nate 身边",
-    paragraphs: [
+    chapter: "GRYFFINDOR × RAVENCLAW",
+    title: "",
+    paragraphs: () => [
       "仍需填入：你坐到 Nate 旁边时，她的第一反应。",
       "接下来，你决定怎样和她搭话。",
     ],
     choices: () => [
       {
         text: "A. 直接开口，靠自己的主动与谈吐接近她。",
-        meta: "Nate 好感 +30；血统背景暂不锁定",
         action: () => {
           state.choices.nateFirstApproach = "direct_charm";
           addAffection("nate", 30);
@@ -411,20 +545,20 @@ const scenes = {
       },
       {
         text: "B. 提到自己也是纯血家族，以此和她攀谈。",
-        meta: "Nate 好感 +20；选择后，本局以纯血家族巫师背景游玩",
+        note: "选择此选项后，本局游戏将以纯血家族巫师背景游玩。",
         action: () => {
           state.choices.nateFirstApproach = "pureblood_topic";
-          state.bloodStatus = "pureblood";
+          state.player.bloodStatus = "pureblood";
           addAffection("nate", 20);
         },
         next: "nateReactionPureblood",
       },
       {
         text: "C. 作为麻瓜出身的巫师，问她一些你不了解的事情，让她给你解答。",
-        meta: "Nate 好感 +25；选择后，本局以麻瓜出身巫师背景游玩",
+        note: "选择此选项后，本局游戏将以麻瓜出身巫师背景游玩。",
         action: () => {
           state.choices.nateFirstApproach = "ask_for_help";
-          state.bloodStatus = "muggleborn";
+          state.player.bloodStatus = "muggleborn";
           addAffection("nate", 25);
         },
         next: "nateReactionMuggleborn",
@@ -433,8 +567,9 @@ const scenes = {
   },
 
   nateReactionDirect: {
-    title: "Nate 的反应",
-    paragraphs: [
+    chapter: "GRYFFINDOR × RAVENCLAW",
+    title: "",
+    paragraphs: () => [
       "仍需填入：你直接搭话、靠主动和谈吐接近 Nate 时，她的专属反应。",
       "仍需填入：她抵抗不住主动的人这一点，在具体互动中的表现。",
     ],
@@ -447,8 +582,9 @@ const scenes = {
   },
 
   nateReactionPureblood: {
-    title: "Nate 的反应",
-    paragraphs: [
+    chapter: "GRYFFINDOR × RAVENCLAW",
+    title: "",
+    paragraphs: () => [
       "仍需填入：你以同为纯血家族为切入口和 Nate 攀谈时，她的专属反应。",
       "仍需填入：你们确实有共同话题，但她第一反应里也有一点“原来你是这样的人啊”的无趣感。",
     ],
@@ -461,8 +597,9 @@ const scenes = {
   },
 
   nateReactionMuggleborn: {
-    title: "Nate 的反应",
-    paragraphs: [
+    chapter: "GRYFFINDOR × RAVENCLAW",
+    title: "",
+    paragraphs: () => [
       "仍需填入：你作为麻瓜出身的巫师向 Nate 请教魔法世界知识时，她的专属反应。",
       "仍需填入：她喜欢能够帮到别人的感觉，在具体互动中的表现。",
     ],
@@ -475,8 +612,9 @@ const scenes = {
   },
 
   trioScene: {
-    title: "三个人",
-    paragraphs: [
+    chapter: "THREE",
+    title: "",
+    paragraphs: () => [
       "仍需填入：课程继续后的场景描写。",
       "Lisa 就坐在 Nate 的另一边。",
       "仍需填入：你、Nate、Lisa 第一次真正共同处在一个场景中的具体互动。",
@@ -486,27 +624,27 @@ const scenes = {
       {
         text: "结束当前版本",
         action: () => {
-          showModal("正在续写中...", "当前格兰芬多初遇主线已结束。后续剧情正在续写中...");
+          showModal(
+            "正在续写中...",
+            "当前格兰芬多初遇主线已结束。后续剧情正在续写中..."
+          );
         },
       },
     ],
   },
 };
 
-// 预留：未来结局判定规则。
-// 当前剧情尚未推进到结局节点，因此暂不自动调用。
+// 结局判定暂时保留，不在当前短篇流程中自动触发。
 function evaluateEnding() {
   const lisa = state.affection.lisa;
   const nate = state.affection.nate;
   const lisaPeak = state.peakAffection.lisa;
   const natePeak = state.peakAffection.nate;
 
-  // 三人结局
   if (nate > 280 && lisa > 280) {
     return "trio";
   }
 
-  // 独善其身
   if (
     natePeak > 250 &&
     lisaPeak > 250 &&
@@ -516,25 +654,21 @@ function evaluateEnding() {
     return "independent";
   }
 
-  // Nate 单人结局
   if (nate > 250 && lisa > 100 && lisa < 200) {
     return "nate";
   }
 
-  // Lisa 单人结局
   if (lisa > 280) {
     return "lisa";
   }
 
-  // 普通结局：
-  // 最终不满足单人 / 三人标准，
-  // 且两人的历史最高好感都没有超过 250。
   if (natePeak <= 250 && lisaPeak <= 250) {
     return "normal";
   }
 
-  // 目前尚未定义的中间状态。
   return "unresolved";
 }
 
-renderScene("houseSelection");
+applyTheme();
+updateStatusPanel();
+renderScene("opening");

@@ -3,63 +3,102 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>HP × Nate × Lisa 文字游戏</title>
+  <title>Lisa · Nate · Hogwarts</title>
   <link rel="stylesheet" href="style.css" />
 </head>
-<body>
-  <main class="game-shell">
-    <section class="game-card">
-      <header class="topbar">
-        <div>
-          <div class="eyebrow">HP AU · TEXT GAME</div>
-          <h1 id="scene-title">霍格沃茨</h1>
-        </div>
-        <button id="reset-button" class="ghost-button" type="button">重新开始</button>
-      </header>
+<body data-theme="neutral">
+  <div class="magic-dust" aria-hidden="true"></div>
 
-      <section class="status-panel" aria-label="当前状态">
-        <div class="status-item">
-          <span>学院</span>
-          <strong id="status-house">未选择</strong>
-        </div>
-        <div class="status-item">
-          <span>血统背景</span>
-          <strong id="status-blood">未确定</strong>
-        </div>
-        <div class="status-item">
-          <span>Lisa 好感</span>
-          <strong id="status-lisa">0</strong>
-        </div>
-        <div class="status-item">
-          <span>Nate 好感</span>
-          <strong id="status-nate">0</strong>
-        </div>
-      </section>
+  <header class="utility-bar">
+    <div class="utility-left">
+      <span class="mini-title">LISA · NATE · HOGWARTS</span>
+    </div>
 
-      <section class="visual-slot" aria-label="未来图片区域">
-        <div class="visual-placeholder">
-          <span>BACKGROUND / SPRITE SLOT</span>
-          <small>图片版预留区域：未来可放背景、Lisa / Nate 立绘</small>
-        </div>
-      </section>
+    <div class="utility-actions">
+      <button id="theme-button" class="utility-button hidden" type="button">
+        回到初始配色
+      </button>
+      <button id="status-button" class="utility-button hidden" type="button">
+        角色状态
+      </button>
+    </div>
+  </header>
+
+  <main class="story-shell">
+    <article class="story-card">
+      <div id="chapter-label" class="chapter-label"></div>
+      <h1 id="scene-title"></h1>
 
       <section id="story-box" class="story-box"></section>
-      <section id="choices-box" class="choices-box"></section>
 
-      <section class="debug-panel">
-        <details>
-          <summary>开发查看：当前隐藏状态</summary>
-          <pre id="debug-state"></pre>
-        </details>
-      </section>
-    </section>
+      <form id="name-form" class="name-form hidden" autocomplete="off">
+        <p class="question-line">你的名字是……？</p>
+
+        <div class="name-grid">
+          <label>
+            <span>名</span>
+            <input id="first-name" name="firstName" maxlength="30" required />
+          </label>
+
+          <label>
+            <span>姓</span>
+            <input id="last-name" name="lastName" maxlength="30" required />
+          </label>
+        </div>
+
+        <button class="primary-button" type="submit">继续</button>
+      </form>
+
+      <section id="choices-box" class="choices-box"></section>
+    </article>
   </main>
+
+  <aside id="status-drawer" class="drawer" aria-hidden="true">
+    <button id="drawer-backdrop" class="drawer-backdrop" type="button" aria-label="关闭状态面板"></button>
+
+    <div class="drawer-panel">
+      <div class="drawer-header">
+        <div>
+          <div class="chapter-label">PLAYER RECORD</div>
+          <h2>角色状态</h2>
+        </div>
+        <button id="drawer-close" class="close-button" type="button" aria-label="关闭">×</button>
+      </div>
+
+      <dl class="status-list">
+        <div>
+          <dt>姓名</dt>
+          <dd id="status-name">未填写</dd>
+        </div>
+        <div>
+          <dt>学院</dt>
+          <dd id="status-house">未选择</dd>
+        </div>
+        <div>
+          <dt>血统背景</dt>
+          <dd id="status-blood">未确定</dd>
+        </div>
+        <div>
+          <dt>Lisa 好感度</dt>
+          <dd id="status-lisa">0</dd>
+        </div>
+        <div>
+          <dt>Nate 好感度</dt>
+          <dd id="status-nate">0</dd>
+        </div>
+      </dl>
+
+      <p class="drawer-note">
+        这里是玩家主动查看的信息界面。平时剧情页面不会直接显示好感度。
+      </p>
+    </div>
+  </aside>
 
   <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
     <div class="modal-card">
       <h2 id="modal-title">提示</h2>
       <p id="modal-text"></p>
-      <button id="modal-close" class="choice-button" type="button">返回</button>
+      <button id="modal-close" class="primary-button" type="button">返回</button>
     </div>
   </div>
 
