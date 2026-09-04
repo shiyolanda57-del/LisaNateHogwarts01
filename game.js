@@ -358,74 +358,84 @@ const scenes = {
       {
         text: "A. 勇敢，活力，骑士精神",
         action: () => chooseHouse("gryffindor"),
-        next: "houseDeclaration",
+        next: "gryffindorDeclaration",
       },
       {
         text: "B. 野心勃勃，谋略，传承",
         action: () => chooseHouse("slytherin"),
-        next: "houseDeclaration",
+        next: "slytherinDeclaration",
       },
       {
         text: "C. 博学，洞察，机敏过人",
         action: () => chooseHouse("ravenclaw"),
-        next: "houseDeclaration",
+        next: "ravenclawDeclaration",
       },
       {
         text: "D. 忠诚，热心，一视同仁",
         action: () => chooseHouse("hufflepuff"),
-        next: "houseDeclaration",
+        next: "hufflepuffDeclaration",
       },
     ],
   },
 
-  houseDeclaration: {
+  gryffindorDeclaration: {
     chapter: "SORTING",
     title: "",
-    paragraphs: () => {
-      const declarations = {
-        gryffindor:
-          "*我们来自荒野，我们渴望力量，我们充满理想，我们英勇无畏，我们正义果敢，我们永不言弃，我们是 格兰芬多！*",
-        slytherin:
-          "*我们来自泥潭，我们渴望权力，我们充满野心，我们强大冷静，我们优雅自持，我们从不后悔，我们是 斯莱特林！*",
-        ravenclaw:
-          "*我们来自河畔，我们聪慧过人，我们冷静思考，我们刻骨钻研，我们追求真理，我们永不言弃，我们是 拉文克劳！*",
-        hufflepuff:
-          "*我们来自森林，我们心怀大爱，我们忠于自然，我们正直忠诚，我们坚韧诚实，我们不畏艰险，我们是 赫奇帕奇！*",
-      };
+    paragraphs: () => [
+      "*我们来自荒野，我们渴望力量，我们充满理想，我们英勇无畏，我们正义果敢，我们永不言弃，我们是 格兰芬多！*",
+    ],
+    choices: () => [
+      {
+        text: "继续",
+        next: "gryffindorIntro",
+      },
+    ],
+  },
 
-      return [declarations[state.player.house]];
-    },
-    choices: () => {
-      if (state.player.house === "gryffindor") {
-        return [
-          {
-            text: "继续",
-            next: "gryffindorIntro",
-          },
-        ];
-      }
+  slytherinDeclaration: {
+    chapter: "SORTING",
+    title: "",
+    paragraphs: () => [
+      "*我们来自泥潭，我们渴望权力，我们充满野心，我们强大冷静，我们优雅自持，我们从不后悔，我们是 斯莱特林！*",
+    ],
+    choices: () => [
+      {
+        text: "继续",
+        next: "slytherinIntro",
+      },
+    ],
+  },
 
-      if (state.player.house === "slytherin") {
-        return [
-          {
-            text: "继续",
-            next: "slytherinIntro",
-          },
-        ];
-      }
-
-      return [
-        {
-          text: "继续",
-          action: () => {
-            showModal(
-              "正在续写中...",
-              `${HOUSE_NAMES[state.player.house]}路线正在续写中...`
-            );
-          },
+  ravenclawDeclaration: {
+    chapter: "SORTING",
+    title: "",
+    paragraphs: () => [
+      "*我们来自河畔，我们聪慧过人，我们冷静思考，我们刻骨钻研，我们追求真理，我们永不言弃，我们是 拉文克劳！*",
+    ],
+    choices: () => [
+      {
+        text: "继续",
+        action: () => {
+          showModal("正在续写中...", "拉文克劳路线正在续写中...");
         },
-      ];
-    },
+      },
+    ],
+  },
+
+  hufflepuffDeclaration: {
+    chapter: "SORTING",
+    title: "",
+    paragraphs: () => [
+      "*我们来自森林，我们心怀大爱，我们忠于自然，我们正直忠诚，我们坚韧诚实，我们不畏艰险，我们是 赫奇帕奇！*",
+    ],
+    choices: () => [
+      {
+        text: "继续",
+        action: () => {
+          showModal("正在续写中...", "赫奇帕奇路线正在续写中...");
+        },
+      },
+    ],
   },
 
   slytherinIntro: {
