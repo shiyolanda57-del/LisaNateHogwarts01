@@ -26,6 +26,7 @@ const INITIAL_STATE = {
     satWithNate: null,
     nateFirstApproach: null,
 
+    slytherinFirstView: null,
     slytherinSusannaDebate: null,
     slytherinNateThanksStyle: null,
   },
@@ -442,14 +443,46 @@ const scenes = {
     chapter: "SLYTHERIN",
     title: "",
     paragraphs: () => [
-      "仍需填入：斯莱特林主控对 Nate Luo 与 Lisa Rowe 的既有认知。",
-      "仍需填入：斯莱特林内部普遍对血统、家族、名气与实力更加门儿清；即使主控自己并不热衷这些，周围人也会像谈论名牌一样谈论这些东西，因此主控早已对 Nate 与 Lisa 的名气、实力和血统小有耳闻。",
-      "仍需填入：这里体现斯莱特林主控比其他学院多一层名利与家世上的观察，但不要因此预设主控本人一定认同这种价值观。",
-      "仍需填入：自然过渡到斯莱特林毕业生 Susanna Kaysen 教授的课程。",
+      "你是个斯莱特林，这意味着不管你内心怎么看待这些，你周围的人总是将血统和姓氏当作名牌一样谈论。",
+      "所以当然，你知道 Nate 和 Lisa。你们院很多人将这对诡异的组合戏谑称之“那个养了只疯狗的亚洲人”：亚裔的纯血拉文克劳、从美国来的混血格兰芬多，两个女孩毫不避讳地形影不离，唉，听听看，多奇怪啊。",
+      "偏偏她们加在一起刚好有能唬人的血统、真会上手揍到你掉牙齿的拳头和蒙骗各院院长相信她们蒙太奇手法借口的成绩单，所以没人能当面这么叫她们；",
+      "偏偏她们行走在霍格沃茨走廊和大厅时会吸引许多爱慕的、艳羡的目光，许多甜蜜的寒暄。尽管院里一些人、同级生坚持说她们那些拥趸和同盟也都目光短浅，但事实就是，她们还没有默默无闻到让人安心忽略、放下叫这些外号的企图的地步。",
+      "你的看法是......",
     ],
     choices: () => [
       {
         text: "继续",
+        next: "slytherinFirstViewChoice",
+      },
+    ],
+  },
+
+  slytherinFirstViewChoice: {
+    chapter: "SLYTHERIN",
+    title: "",
+    paragraphs: () => [],
+    choices: () => [
+      {
+        text: "A. 那个拉文克劳是纯血，父亲在魔法部工作，所以没必要招惹她们。",
+        action: () => {
+          state.choices.slytherinFirstView = "status_pragmatist";
+        },
+        next: "slytherinSusannaClass",
+      },
+      {
+        text: "B. 不管她们远观如何，周围人怎么议论，你并不知道真实的她们是怎么样的人。",
+        action: () => {
+          state.choices.slytherinFirstView = "open_minded";
+          addAffection("nate", 15);
+        },
+        next: "slytherinSusannaClass",
+      },
+      {
+        text: "C. 这些你和你周围人家族共同遵守的、按姓氏血统论资排辈的信条，正给这两人带来多少便利呢？你从不觉得这些有什么了不起，甚至有微妙的厌恶别人整日谈论它们，可是眼下这有两个人，到底是在利用这些违反校规，还是用这种方式嘲讽这些东西呢？",
+        action: () => {
+          state.choices.slytherinFirstView = "questioning_hierarchy";
+          addAffection("nate", 15);
+        },
         next: "slytherinSusannaClass",
       },
     ],
