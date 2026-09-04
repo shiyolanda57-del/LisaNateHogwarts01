@@ -334,41 +334,73 @@ const scenes = {
 
   houseSelection: {
     chapter: "SORTING",
-    title: "选择你的学院",
+    title: "",
     paragraphs: () => [
-      "仍需填入分院场景描写。",
-      "这里预留较多学院介绍空间；正式文字之后由你填写。",
+      "给新生的分院仪式还是老样子，你和同院生善意地向被报到你们院名字的新生鼓掌欢呼。",
+      "这些小孩子们脸颊红扑扑的，眼睛里闪着光，多少有对刚刚被分院帽念出的、你们学院那些品质的认同：......",
     ],
     choices: () => [
       {
-        text: "A. 格兰芬多",
-        note: "仍需填入格兰芬多学院介绍。",
+        text: "继续",
+        next: "houseQualityChoice",
+      },
+    ],
+  },
+
+  houseQualityChoice: {
+    chapter: "SORTING",
+    title: "",
+    paragraphs: () => [],
+    choices: () => [
+      {
+        text: "A. 勇敢，活力，骑士精神",
         action: () => chooseHouse("gryffindor"),
-        next: "gryffindorIntro",
+        next: "houseDeclaration",
       },
       {
-        text: "B. 拉文克劳",
-        note: "仍需填入拉文克劳学院介绍。",
-        action: () => {
-          chooseHouse("ravenclaw");
-          showModal("正在续写中...", "拉文克劳路线正在续写中...");
-        },
+        text: "B. 野心勃勃，谋略，传承",
+        action: () => chooseHouse("slytherin"),
+        next: "houseDeclaration",
       },
       {
-        text: "C. 赫奇帕奇",
-        note: "仍需填入赫奇帕奇学院介绍。",
-        action: () => {
-          chooseHouse("hufflepuff");
-          showModal("正在续写中...", "赫奇帕奇路线正在续写中...");
-        },
+        text: "C. 博学，洞察，机敏过人",
+        action: () => chooseHouse("ravenclaw"),
+        next: "houseDeclaration",
       },
       {
-        text: "D. 斯莱特林",
-        note: "仍需填入斯莱特林学院介绍。",
+        text: "D. 忠诚，热心，一视同仁",
+        action: () => chooseHouse("hufflepuff"),
+        next: "houseDeclaration",
+      },
+    ],
+  },
+
+  houseDeclaration: {
+    chapter: "SORTING",
+    title: "",
+    paragraphs: () => {
+      const declarations = {
+        gryffindor:
+          "*我们来自荒野，我们渴望力量，我们充满理想，我们英勇无畏，我们正义果敢，我们永不言弃，我们是 格兰芬多！*",
+        slytherin:
+          "*我们来自泥潭，我们渴望权力，我们充满野心，我们强大冷静，我们优雅自持，我们从不后悔，我们是 斯莱特林！*",
+        ravenclaw:
+          "*我们来自河畔，我们聪慧过人，我们冷静思考，我们刻骨钻研，我们追求真理，我们永不言弃，我们是 拉文克劳！*",
+        hufflepuff:
+          "*我们来自森林，我们心怀大爱，我们忠于自然，我们正直忠诚，我们坚韧诚实，我们不畏艰险，我们是 赫奇帕奇！*",
+      };
+
+      return [declarations[state.player.house]];
+    },
+    choices: () => [
+      {
+        text: "继续",
         action: () => {
-          chooseHouse("slytherin");
-          showModal("正在续写中...", "斯莱特林路线正在续写中...");
+          if (state.player.house !== "gryffindor") {
+            showModal("正在续写中...", `${HOUSE_NAMES[state.player.house]}路线正在续写中...`);
+          }
         },
+        next: state.player.house === "gryffindor" ? "gryffindorIntro" : null,
       },
     ],
   },
