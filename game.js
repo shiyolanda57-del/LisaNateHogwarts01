@@ -26,14 +26,14 @@ const INITIAL_STATE = {
     satWithNate: null,
     nateFirstApproach: null,
 
-    ravenclawStartingBondApplied: false,
-    ravenclawBreakIceStyle: null,
-    ravenclawHogsmeadeQuestion: null,
-
     slytherinFirstView: null,
     slytherinSusannaDebate: null,
     slytherinSusannaOpeningLine: "",
     slytherinNateThanksStyle: null,
+
+    ravenclawBaselineApplied: false,
+    ravenclawBreakIceChoice: null,
+    ravenclawAfterClassReply: null,
   },
 
   ui: {
@@ -169,13 +169,6 @@ function chooseHouse(house) {
   state.ui.usingNeutralTheme = false;
   applyTheme();
   updateStatusPanel();
-}
-
-function ensureRavenclawStartingBond() {
-  if (!state.choices.ravenclawStartingBondApplied) {
-    addAffection("nate", 30);
-    state.choices.ravenclawStartingBondApplied = true;
-  }
 }
 
 themeButton.addEventListener("click", () => {
@@ -671,45 +664,64 @@ const scenes = {
       {
         text: "继续",
         action: () => {
-          ensureRavenclawStartingBond();
+          if (!state.choices.ravenclawBaselineApplied) {
+            addAffection("nate", 30);
+            state.choices.ravenclawBaselineApplied = true;
+          }
         },
-        next: "ravenclawIntro",
+        next: "ravenclawHistory",
       },
     ],
   },
 
-  ravenclawIntro: {
-    chapter: "RAVENCLAW",
+  hufflepuffDeclaration: {
+    chapter: "SORTING",
     title: "",
     paragraphs: () => [
-      "仍需填入：一年级刚入学时，Nate 还没有认识跨院的 Lisa，你和 Nate 曾经非常亲密。",
-      "仍需填入：你和 Nate 都早慧，脑回路相似，那段关系有一种双生镜像般的感觉；你们曾经有过一丝成为挚友的机会。",
-      "仍需填入：后来 Nate 很快选择了 Lisa，那枚本来可能继续张开的珠蚌像是合上了。",
-      "仍需填入：你对 Lisa 的复杂感受——她更外放、更直观地有魅力，当然能吸引 Nate；你会艳羡、会嫉妒，也承认她确实有魅力，并知道 Nate 可以有她陪着。",
-      "仍需填入：这个已经错过的机会，在游戏主线这一学年重新出现。",
+      "*我们来自森林，我们心怀大爱，我们忠于自然，我们正直忠诚，我们坚韧诚实，我们不畏艰险，我们是 赫奇帕奇！*",
     ],
     choices: () => [
       {
         text: "继续",
-        next: "ravenclawClassGroup",
+        action: () => {
+          showModal("正在续写中...", "赫奇帕奇路线正在续写中...");
+        },
       },
     ],
   },
 
-  ravenclawClassGroup: {
+  ravenclawHistory: {
+    chapter: "RAVENCLAW",
+    title: "",
+    paragraphs: () => [
+      "仍需填入：一年级刚入学时，你和 Nate 曾经很亲近的前情。",
+      "仍需填入：那时 Nate 还没有认识跨院的 Lisa；你和 Nate 都早慧，脑回路相似，有一种双生镜像般的默契。",
+      "仍需填入：你们曾经有一丝机会成为真正的挚友，但那个机会后来像珠蚌一样合上了。",
+      "仍需填入：Nate 很快把更多的注意力转向 Lisa。你知道 Lisa 更外放、更直观地有魅力，也明白为什么她能吸引 Nate；与此同时，你对 Lisa 既有艳羡、嫉妒，也承认她确实有魅力。",
+      "仍需填入：对 Nate，你并不只是单纯地怨恨。某种意义上，你甚至觉得 Lisa 陪着她也很好；但这个曾经关闭的机会，在这个学年重新出现了。",
+      "【前情状态：Nate 对你原本已有 30 好感度。】",
+    ],
+    choices: () => [
+      {
+        text: "继续",
+        next: "ravenclawClassGrouping",
+      },
+    ],
+  },
+
+  ravenclawClassGrouping: {
     chapter: "RAVENCLAW · NATE",
     title: "",
     paragraphs: () => [
-      "仍需填入：开学后的一次课上，你和 Nate 被分到同一组。",
-      "仍需填入：短暂的尴尬与破冰前的课堂气氛。",
-      "Nate 主动找你说话。",
-      "你决定——",
+      "仍需填入：开学后的某一节拉文克劳课程，以及课堂分组的场景描写。",
+      "仍需填入：你和 Nate 被分到同一组。久违地坐得这样近，她先主动和你说了话，像是在试图把什么重新接起来。",
+      "你怎么回答？",
     ],
     choices: () => [
       {
         text: "A. 回答她，冷酷的。",
         action: () => {
-          state.choices.ravenclawBreakIceStyle = "cold";
+          state.choices.ravenclawBreakIceChoice = "cold";
           addAffection("nate", 30);
         },
         next: "ravenclawColdReaction",
@@ -717,15 +729,15 @@ const scenes = {
       {
         text: "B. 回答她，让她知道刚入学时转瞬即逝的友谊对自己没有产生任何影响。",
         action: () => {
-          state.choices.ravenclawBreakIceStyle = "unaffected";
+          state.choices.ravenclawBreakIceChoice = "unaffected";
           addAffection("nate", 30);
         },
         next: "ravenclawColdReaction",
       },
       {
-        text: "C. 回答她，并潇洒地说：“嘿，我知道这听起来很突然，等下你想一起去黑湖边散散步吗？别说你有其他计划，我会把你借走的……”而这一切都是为了不久后当 Lisa 不找她玩了，再狠狠离开她。",
+        text: "C. 回答她，并潇洒地说：嘿，我知道这听起来很突然，等下你想一起去黑湖边散散步吗？别说你有其他计划，我会把你借走的……而这一切都是为了不久后当 Lisa 不找她玩了，再狠狠离开她。",
         action: () => {
-          state.choices.ravenclawBreakIceStyle = "black_lake_invite";
+          state.choices.ravenclawBreakIceChoice = "black_lake_invite";
           addAffection("nate", 30);
         },
         next: "ravenclawBlackLakeReaction",
@@ -733,10 +745,10 @@ const scenes = {
       {
         text: "D. 不回答她，去和另一边的女生说话，并完全不注意她的动静。",
         action: () => {
-          state.choices.ravenclawBreakIceStyle = "ignore";
+          state.choices.ravenclawBreakIceChoice = "ignore";
           addAffection("nate", 30);
         },
-        next: "ravenclawIgnoredAfterClass",
+        next: "ravenclawIgnoreReaction",
       },
     ],
   },
@@ -745,63 +757,67 @@ const scenes = {
     chapter: "RAVENCLAW · NATE",
     title: "",
     paragraphs: () => [
-      "Nate 只是说了声“oh”，笑笑地看了你一眼，乖乖地回去做自己的了。",
-      "仍需填入：这里关于 Nate 本身魅力与形象的描写。",
-      "你继续想，刚刚那个约她一起的念头又冒出来了。看着她的样子，你竟然不再觉得这是愚蠢至极的，她看起来会答应任何事。",
-      "下课后，Nate 转过来问你：“hey，周日想一起去霍格莫德吃饭吗？”",
+      "Nate 只是“oh”了一声，笑笑地看了你一眼，乖乖地回去做自己的了。",
+      "仍需填入：这里关于 Nate 魅力形象的描写。",
+      "她做自己的事情之后，你刚刚那个约她一起的念头又冒出来了。看着她的样子，你竟然不再觉得这是愚蠢至极的——她看起来会答应任何事。",
+      "但你没有开口。",
     ],
     choices: () => [
       {
         text: "继续",
-        next: "ravenclawHogsmeadeQuestion",
+        next: "ravenclawNateInvitesHogsmeade",
       },
     ],
   },
 
-  ravenclawIgnoredAfterClass: {
+  ravenclawIgnoreReaction: {
     chapter: "RAVENCLAW · NATE",
     title: "",
     paragraphs: () => [
-      "仍需填入：你整节课都没有再理会 Nate，也没有注意她的动静。",
-      "下课后，她却还是又一次试着破冰，问你：“hey，周日想一起去霍格莫德吃饭吗？”",
+      "仍需填入：你完全不回答 Nate、转而和另一边的女生说话时，课堂继续的场景。",
+      "仍需填入：Nate 没有因此恼怒，她仍然以一种包容而近乎宠爱的方式对待你的拒绝。",
+      "下课以后，她又一次尝试把这层冰敲开。",
     ],
     choices: () => [
       {
         text: "继续",
-        next: "ravenclawHogsmeadeQuestion",
+        next: "ravenclawNateInvitesHogsmeade",
       },
     ],
   },
 
-  ravenclawHogsmeadeQuestion: {
+  ravenclawNateInvitesHogsmeade: {
     chapter: "RAVENCLAW · NATE",
     title: "",
-    paragraphs: () => [],
+    paragraphs: () => [
+      "下课后，Nate 转过来对你说：“hey，周日想一起去霍格莫德吃饭吗？”",
+    ],
     choices: () => [
       {
         text: "A. 就我们俩？",
         action: () => {
-          state.choices.ravenclawHogsmeadeQuestion = "just_us";
+          state.choices.ravenclawAfterClassReply = "just_us";
         },
-        next: "ravenclawHogsmeadeAnswer",
+        next: "ravenclawHogsmeadeClarification",
       },
       {
         text: "B. 那个谁不会也……",
         action: () => {
-          state.choices.ravenclawHogsmeadeQuestion = "what_about_lisa";
+          state.choices.ravenclawAfterClassReply = "will_lisa_be_there";
         },
-        next: "ravenclawHogsmeadeAnswer",
+        next: "ravenclawHogsmeadeClarification",
       },
     ],
   },
 
-  ravenclawHogsmeadeAnswer: {
+  ravenclawHogsmeadeClarification: {
     chapter: "RAVENCLAW · NATE / LISA",
     title: "",
     paragraphs: () => [
       "Nate 说：“我们俩，和我的好朋友 Lisa 一起，她会超喜欢你的。”",
-      "仍需填入：你对这句话的即时反应，以及你和 Nate 从这里重新回到普通朋友关系的过渡。",
-      "仍需填入：之后 Nate 会逐渐邀请你和 Lisa 三个人一起行动，并与其他学院路线同步进入一些共同情节，例如霍格莫德村。",
+      "仍需填入：这一刻你对重新进入 Nate 的生活、以及 Lisa 被自然带入你们之间的感受。",
+      "仍需填入：之后 Nate 和你回到普通朋友关系，并逐渐邀请你与 Lisa 三个人一起行动。",
+      "仍需填入：未来可从这里并入各学院共享的霍格莫德等共同剧情。",
       "当前拉文克劳主线暂时写到这里。",
     ],
     choices: () => [
@@ -821,10 +837,11 @@ const scenes = {
     chapter: "RAVENCLAW · NATE",
     title: "",
     paragraphs: () => [
-      "Nate 罕见地露出一个灿烂的笑容：“我很乐意。”",
-      "她接着说，等周日，你们俩可以先去散步，然后还可以一起去找 Lisa，去霍格莫德三人一起小聚。",
-      "仍需填入：你看到 Nate 这个反应时的内心变化。",
-      "仍需填入：之后 Nate 和你逐渐回到普通朋友关系，并将你重新带入她与 Lisa 的共同活动中。",
+      "Nate 罕见地露出灿烂的笑容：“我很乐意。”",
+      "仍需填入：她答应黑湖散步时的具体反应与 Nate 的魅力描写。",
+      "她接着说，等周日你们俩可以先一起散步，然后还可以去找 Lisa，三个人一起去霍格莫德小聚。",
+      "仍需填入：你原本带着一点报复意味的邀约，在她毫无戒备的接受里产生了怎样的变化。",
+      "仍需填入：之后 Nate 和你重新回到普通朋友关系，并自然把 Lisa 带进共同活动。",
       "当前拉文克劳主线暂时写到这里。",
     ],
     choices: () => [
@@ -835,22 +852,6 @@ const scenes = {
             "正在续写中...",
             "当前拉文克劳初遇主线已结束。后续剧情正在续写中..."
           );
-        },
-      },
-    ],
-  },
-
-  hufflepuffDeclaration: {
-    chapter: "SORTING",
-    title: "",
-    paragraphs: () => [
-      "*我们来自森林，我们心怀大爱，我们忠于自然，我们正直忠诚，我们坚韧诚实，我们不畏艰险，我们是 赫奇帕奇！*",
-    ],
-    choices: () => [
-      {
-        text: "继续",
-        action: () => {
-          showModal("正在续写中...", "赫奇帕奇路线正在续写中...");
         },
       },
     ],
