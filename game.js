@@ -2,6 +2,8 @@ const INITIAL_STATE = {
   player: {
     firstName: "",
     lastName: "",
+    birthMonth: null,
+    birthDay: null,
     house: null,
     bloodStatus: null,
   },
@@ -49,6 +51,10 @@ const chapterLabel = document.querySelector("#chapter-label");
 const storyBox = document.querySelector("#story-box");
 const choicesBox = document.querySelector("#choices-box");
 
+const birthdayForm = document.querySelector("#birthday-form");
+const birthMonthInput = document.querySelector("#birth-month");
+const birthDayInput = document.querySelector("#birth-day");
+
 const nameForm = document.querySelector("#name-form");
 const firstNameInput = document.querySelector("#first-name");
 const lastNameInput = document.querySelector("#last-name");
@@ -61,6 +67,7 @@ const drawerBackdrop = document.querySelector("#drawer-backdrop");
 const drawerClose = document.querySelector("#drawer-close");
 
 const statusName = document.querySelector("#status-name");
+const statusBirthday = document.querySelector("#status-birthday");
 const statusHouse = document.querySelector("#status-house");
 const statusBlood = document.querySelector("#status-blood");
 const statusLisa = document.querySelector("#status-lisa");
@@ -77,6 +84,32 @@ function fullName() {
   return [first, last].filter(Boolean).join(" ");
 }
 
+function birthdayText() {
+  const month = state.player.birthMonth;
+  const day = state.player.birthDay;
+  return month && day ? `${month}月${day}日` : "";
+}
+
+function escapeHTML(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+// 剧情文本支持两个简单功能：
+// 1. 写【玩家名字】时，自动替换成玩家输入的姓名。
+// 2. 用 *文字* 包起来时，显示为斜体。
+// 以后正文里可以直接沿用这种写法，不需要手动改 HTML。
+function formatStoryText(text) {
+  let safe = escapeHTML(text);
+  safe = safe.replaceAll("【玩家名字】", escapeHTML(fullName()));
+  safe = safe.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  return safe;
+}
+
 function addAffection(character, amount) {
   state.affection[character] += amount;
   state.peakAffection[character] = Math.max(
@@ -88,6 +121,7 @@ function addAffection(character, amount) {
 
 function updateStatusPanel() {
   statusName.textContent = fullName() || "未填写";
+  statusBirthday.textContent = birthdayText() || "未填写";
   statusHouse.textContent = state.player.house
     ? HOUSE_NAMES[state.player.house]
     : "未选择";
@@ -148,6 +182,38 @@ modalClose.addEventListener("click", () => {
   modal.classList.add("hidden");
 });
 
+birthdayForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const month = Number(birthMonthInput.value);
+  const day = Number(birthDayInput.value);
+
+  const maxDay = new Date(2000, month, 0).getDate();
+  const isValid =
+    Number.isInteger(month) &&
+    Number.isInteger(day) &&
+    month >= 1 &&
+    month <= 12 &&
+    day >= 1 &&
+    day <= maxDay;
+
+  const oldError = birthdayForm.querySelector(".form-error");
+  if (oldError) oldError.remove();
+
+  if (!isValid) {
+    const error = document.createElement("p");
+    error.className = "form-error";
+    error.textContent = "请输入有效的月份和日期。";
+    birthdayForm.insertBefore(error, birthdayForm.querySelector(".primary-button"));
+    return;
+  }
+
+  state.player.birthMonth = month;
+  state.player.birthDay = day;
+  updateStatusPanel();
+  renderScene("nameScene");
+});
+
 nameForm.addEventListener("submit", (event) => {
   event.preventDefault();
 
@@ -202,10 +268,11 @@ function renderScene(sceneId) {
   storyBox.innerHTML = "";
   scene.paragraphs().forEach((text) => {
     const p = document.createElement("p");
-    p.textContent = text;
+    p.innerHTML = formatStoryText(text);
     storyBox.appendChild(p);
   });
 
+  birthdayForm.classList.toggle("hidden", sceneId !== "birthdayScene");
   nameForm.classList.toggle("hidden", sceneId !== "nameScene");
 
   choicesBox.innerHTML = "";
@@ -222,23 +289,30 @@ const scenes = {
     chapter: "PROLOGUE",
     title: "",
     paragraphs: () => [
-      "仍需填入游戏开场文字。",
-      "仍需填入进入霍格沃茨世界前的故事性铺垫。",
-      "仍需填入自然过渡到询问玩家姓名的最后一句。",
+      "又是一个九月，你从九又四分之三站台踏上了列车。",
+      "在车厢中望向窗外向后退的景色，你多少还是有些惆怅：部分为了暑假不再来，部分为了，这个学年你就要满十六岁了，青春期莫名多变的情绪时不时会汹涌出来，包裹住你。",
+      "还有多久到你的生日来着？......",
     ],
     choices: () => [
       {
         text: "继续",
-        next: "nameScene",
+        next: "birthdayScene",
       },
     ],
+  },
+
+  birthdayScene: {
+    chapter: "PROLOGUE",
+    title: "",
+    paragraphs: () => [],
+    choices: () => [],
   },
 
   nameScene: {
     chapter: "PROLOGUE",
     title: "",
     paragraphs: () => [
-      "仍需填入承接开场文字、自然询问玩家姓名的场景描写。",
+      "生日记住了。接下来，你叫什么名字？",
     ],
     choices: () => [],
   },
@@ -247,8 +321,8 @@ const scenes = {
     chapter: "PROLOGUE",
     title: "",
     paragraphs: () => [
-      `仍需填入：玩家以“${fullName()}”这个名字进入故事后的承接文字。`,
-      "仍需填入：从姓名确认自然过渡到霍格沃茨分院的场景描写。",
+      "好了，十五岁，马上就要十六岁的【玩家名字】，希望你在霍格沃茨度过丰富的、也许能收获漂亮成绩单和*期待中的邂逅*的一年。",
+      "仍需填入：这一段之后的开场内容。",
     ],
     choices: () => [
       {

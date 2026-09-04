@@ -474,3 +474,16 @@ h1 {
     text-align: left;
   }
 }
+
+
+.story-box em {
+  font-style: italic;
+}
+
+.form-error {
+  margin: -4px 0 14px;
+  color: var(--accent);
+  font-family: Arial, "Noto Sans SC", sans-serif;
+  font-size: 12px;
+  line-height: 1.6;
+}

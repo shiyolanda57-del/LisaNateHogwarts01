@@ -31,6 +31,43 @@
 
       <section id="story-box" class="story-box"></section>
 
+
+      <form id="birthday-form" class="name-form hidden" autocomplete="off">
+        <p class="question-line">你的生日是……？</p>
+
+        <div class="name-grid">
+          <label>
+            <span>月</span>
+            <input
+              id="birth-month"
+              name="birthMonth"
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="12"
+              placeholder="1–12"
+              required
+            />
+          </label>
+
+          <label>
+            <span>日</span>
+            <input
+              id="birth-day"
+              name="birthDay"
+              type="number"
+              inputmode="numeric"
+              min="1"
+              max="31"
+              placeholder="1–31"
+              required
+            />
+          </label>
+        </div>
+
+        <button class="primary-button" type="submit">继续</button>
+      </form>
+
       <form id="name-form" class="name-form hidden" autocomplete="off">
         <p class="question-line">你的名字是……？</p>
 
@@ -69,6 +106,10 @@
         <div>
           <dt>姓名</dt>
           <dd id="status-name">未填写</dd>
+        </div>
+        <div>
+          <dt>生日</dt>
+          <dd id="status-birthday">未填写</dd>
         </div>
         <div>
           <dt>学院</dt>
