@@ -84,6 +84,16 @@ const drawerBackdrop = document.querySelector("#drawer-backdrop");
 const drawerClose = document.querySelector("#drawer-close");
 const restartButton = document.querySelector("#restart-button");
 const saveSlots = document.querySelector("#save-slots");
+const loadSlots = document.querySelector("#load-slots");
+const menuTitle = document.querySelector("#menu-title");
+const menuHome = document.querySelector("#menu-home");
+const menuStatus = document.querySelector("#menu-status");
+const menuSave = document.querySelector("#menu-save");
+const menuLoad = document.querySelector("#menu-load");
+const menuSystem = document.querySelector("#menu-system");
+const menuTiles = document.querySelectorAll(".menu-tile");
+const menuBackButtons = document.querySelectorAll(".menu-back-button");
+const systemThemeButton = document.querySelector("#system-theme-button");
 
 const statusName = document.querySelector("#status-name");
 const statusBirthday = document.querySelector("#status-birthday");
@@ -179,8 +189,79 @@ themeButton.addEventListener("click", () => {
 menuButton.addEventListener("click", () => {
   updateStatusPanel();
   renderSaveSlots();
+  showMenuView("home");
   menuDrawer.classList.add("open");
   menuDrawer.setAttribute("aria-hidden", "false");
+});
+
+function showMenuView(viewName) {
+  const views = {
+    home: menuHome,
+    status: menuStatus,
+    save: menuSave,
+    load: menuLoad,
+    system: menuSystem,
+  };
+
+  Object.values(views).forEach((view) => {
+    view.classList.add("hidden");
+  });
+
+  views[viewName].classList.remove("hidden");
+
+  const titles = {
+    home: "菜单",
+    status: "状态",
+    save: "存档",
+    load: "读档",
+    system: "系统",
+  };
+  menuTitle.textContent = titles[viewName];
+
+  if (viewName === "status") {
+    updateStatusPanel();
+  }
+
+  if (viewName === "save" || viewName === "load") {
+    renderSaveSlots();
+  }
+
+  if (viewName === "system") {
+    syncSystemThemeButton();
+  }
+}
+
+menuTiles.forEach((button) => {
+  button.addEventListener("click", () => {
+    showMenuView(button.dataset.menuTarget);
+  });
+});
+
+menuBackButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    showMenuView("home");
+  });
+});
+
+function syncSystemThemeButton() {
+  if (!state.player.house) {
+    systemThemeButton.textContent = "初始配色";
+    systemThemeButton.disabled = true;
+    return;
+  }
+
+  systemThemeButton.disabled = false;
+  systemThemeButton.textContent = state.ui.usingNeutralTheme
+    ? "恢复学院配色"
+    : "回到初始配色";
+}
+
+systemThemeButton.addEventListener("click", () => {
+  if (!state.player.house) return;
+  state.ui.usingNeutralTheme = !state.ui.usingNeutralTheme;
+  applyTheme();
+  syncSystemThemeButton();
+  writeAutosave();
 });
 
 function closeDrawer() {
@@ -329,69 +410,79 @@ function deleteSlot(slotNumber) {
   renderSaveSlots();
 }
 
-function renderSaveSlots() {
-  saveSlots.innerHTML = "";
+function buildSlotCard(slot, mode) {
+  const payload = readSave(SAVE_SLOT_PREFIX + slot);
+  const card = document.createElement("div");
+  card.className = "save-slot";
 
-  for (let slot = 1; slot <= SAVE_SLOT_COUNT; slot++) {
-    const payload = readSave(SAVE_SLOT_PREFIX + slot);
-    const card = document.createElement("div");
-    card.className = "save-slot";
+  const top = document.createElement("div");
+  top.className = "save-slot-top";
 
-    const top = document.createElement("div");
-    top.className = "save-slot-top";
+  const info = document.createElement("div");
+  const title = document.createElement("p");
+  title.className = "save-slot-title";
+  title.textContent = `存档 ${slot}`;
 
-    const info = document.createElement("div");
-    const title = document.createElement("p");
-    title.className = "save-slot-title";
-    title.textContent = `存档 ${slot}`;
+  const meta = document.createElement("p");
+  meta.className = "save-slot-meta";
 
-    const meta = document.createElement("p");
-    meta.className = "save-slot-meta";
+  if (payload) {
+    const savedState = payload.state || {};
+    const player = savedState.player || {};
+    const savedName = [player.firstName, player.lastName].filter(Boolean).join(" ");
+    const house = player.house ? HOUSE_NAMES[player.house] : "未分院";
+    meta.textContent =
+      `${savedName || "未命名"} · ${house} · ${sceneDisplayName(payload.sceneId)} · ${formatSaveTime(payload.savedAt)}`;
+  } else {
+    meta.textContent = "空档位";
+  }
 
-    if (payload) {
-      const savedState = payload.state || {};
-      const player = savedState.player || {};
-      const savedName = [player.firstName, player.lastName].filter(Boolean).join(" ");
-      const house = player.house ? HOUSE_NAMES[player.house] : "未分院";
-      meta.textContent =
-        `${savedName || "未命名"} · ${house} · ${sceneDisplayName(payload.sceneId)} · ${formatSaveTime(payload.savedAt)}`;
-    } else {
-      meta.textContent = "空档位";
-    }
+  info.appendChild(title);
+  info.appendChild(meta);
+  top.appendChild(info);
+  card.appendChild(top);
 
-    info.appendChild(title);
-    info.appendChild(meta);
-    top.appendChild(info);
-    card.appendChild(top);
+  const actions = document.createElement("div");
+  actions.className = "save-slot-actions";
 
-    const actions = document.createElement("div");
-    actions.className = "save-slot-actions";
-
+  if (mode === "save") {
     const saveButton = document.createElement("button");
-    saveButton.className = "slot-button";
+    saveButton.className = "slot-button save-slot-action";
     saveButton.type = "button";
     saveButton.textContent = payload ? "覆盖" : "存档";
     saveButton.addEventListener("click", () => saveToSlot(slot));
     actions.appendChild(saveButton);
 
-    const loadButton = document.createElement("button");
-    loadButton.className = "slot-button";
-    loadButton.type = "button";
-    loadButton.textContent = "读档";
-    loadButton.disabled = !payload;
-    loadButton.addEventListener("click", () => loadFromSlot(slot));
-    actions.appendChild(loadButton);
-
     const deleteButton = document.createElement("button");
-    deleteButton.className = "slot-button";
+    deleteButton.className = "slot-button delete-slot-action";
     deleteButton.type = "button";
     deleteButton.textContent = "删除";
     deleteButton.disabled = !payload;
     deleteButton.addEventListener("click", () => deleteSlot(slot));
     actions.appendChild(deleteButton);
+  }
 
-    card.appendChild(actions);
-    saveSlots.appendChild(card);
+  if (mode === "load") {
+    const loadButton = document.createElement("button");
+    loadButton.className = "slot-button load-slot-action";
+    loadButton.type = "button";
+    loadButton.textContent = "读档";
+    loadButton.disabled = !payload;
+    loadButton.addEventListener("click", () => loadFromSlot(slot));
+    actions.appendChild(loadButton);
+  }
+
+  card.appendChild(actions);
+  return card;
+}
+
+function renderSaveSlots() {
+  saveSlots.innerHTML = "";
+  loadSlots.innerHTML = "";
+
+  for (let slot = 1; slot <= SAVE_SLOT_COUNT; slot++) {
+    saveSlots.appendChild(buildSlotCard(slot, "save"));
+    loadSlots.appendChild(buildSlotCard(slot, "load"));
   }
 }
 
