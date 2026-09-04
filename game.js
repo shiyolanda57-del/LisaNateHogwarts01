@@ -392,17 +392,28 @@ const scenes = {
 
       return [declarations[state.player.house]];
     },
-    choices: () => [
-      {
-        text: "继续",
-        action: () => {
-          if (state.player.house !== "gryffindor") {
-            showModal("正在续写中...", `${HOUSE_NAMES[state.player.house]}路线正在续写中...`);
-          }
+    choices: () => {
+      if (state.player.house === "gryffindor") {
+        return [
+          {
+            text: "继续",
+            next: "gryffindorIntro",
+          },
+        ];
+      }
+
+      return [
+        {
+          text: "继续",
+          action: () => {
+            showModal(
+              "正在续写中...",
+              `${HOUSE_NAMES[state.player.house]}路线正在续写中...`
+            );
+          },
         },
-        next: state.player.house === "gryffindor" ? "gryffindorIntro" : null,
-      },
-    ],
+      ];
+    },
   },
 
   gryffindorIntro: {
