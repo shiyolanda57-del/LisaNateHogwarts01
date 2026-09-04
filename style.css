@@ -487,3 +487,33 @@ h1 {
   font-size: 12px;
   line-height: 1.6;
 }
+
+
+.custom-line-label {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.custom-line-label textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 140px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--page-bg);
+  color: var(--text);
+  padding: 14px 15px;
+  outline: none;
+  line-height: 1.75;
+}
+
+.custom-line-label textarea:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--glow);
+}
+
+.player-written-line {
+  padding-left: 18px;
+  border-left: 2px solid var(--accent);
+  font-style: italic;
+}

@@ -128,3 +128,17 @@
 
 页面不会显示好感变化。
 选择结果会记录到 `state.choices.slytherinFirstView`，供后文继续调用。
+
+
+## V7：斯莱特林线 Susanna 课堂正式正文
+
+新增连续剧情页：
+1. 新学年空气变化 / 第二天撞见 Nate 与 Lisa 围在 Susanna 身边。
+2. 主控对“缠着年轻老师献媚”的看法，以及对 Susanna 的本院认同。
+3. 主控想争取回随堂测分数、仍然在意母亲称赞与礼物。
+4. 玩家自由填写自己要对 Susanna 说的话。
+5. 下一页显示玩家自己输入的台词，并进入 Susanna 的正式回应。
+6. 再继续进入原有 Nate 悄悄提醒的剧情。
+
+玩家填写的自由台词保存于：
+`state.choices.slytherinSusannaOpeningLine`

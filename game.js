@@ -28,6 +28,7 @@ const INITIAL_STATE = {
 
     slytherinFirstView: null,
     slytherinSusannaDebate: null,
+    slytherinSusannaOpeningLine: "",
     slytherinNateThanksStyle: null,
   },
 
@@ -62,6 +63,9 @@ const birthDayInput = document.querySelector("#birth-day");
 const nameForm = document.querySelector("#name-form");
 const firstNameInput = document.querySelector("#first-name");
 const lastNameInput = document.querySelector("#last-name");
+
+const customLineForm = document.querySelector("#custom-line-form");
+const customLineInput = document.querySelector("#custom-line-input");
 
 const themeButton = document.querySelector("#theme-button");
 const statusButton = document.querySelector("#status-button");
@@ -232,6 +236,16 @@ nameForm.addEventListener("submit", (event) => {
   renderScene("afterName");
 });
 
+customLineForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  const line = customLineInput.value.trim();
+  if (!line) return;
+
+  state.choices.slytherinSusannaOpeningLine = line;
+  renderScene("slytherinSusannaResponse");
+});
+
 function makeChoiceButton(choice) {
   const button = document.createElement("button");
   button.className = "choice-button";
@@ -270,14 +284,29 @@ function renderScene(sceneId) {
   sceneTitle.textContent = scene.title || "";
 
   storyBox.innerHTML = "";
-  scene.paragraphs().forEach((text) => {
+  scene.paragraphs().forEach((item) => {
     const p = document.createElement("p");
-    p.innerHTML = formatStoryText(text);
+
+    if (typeof item === "string") {
+      p.innerHTML = formatStoryText(item);
+    } else {
+      p.innerHTML = formatStoryText(item.text);
+      if (item.className) p.classList.add(item.className);
+    }
+
     storyBox.appendChild(p);
   });
 
   birthdayForm.classList.toggle("hidden", sceneId !== "birthdayScene");
   nameForm.classList.toggle("hidden", sceneId !== "nameScene");
+  customLineForm.classList.toggle(
+    "hidden",
+    sceneId !== "slytherinSusannaPlayerLine"
+  );
+
+  if (sceneId === "slytherinSusannaPlayerLine") {
+    customLineInput.value = state.choices.slytherinSusannaOpeningLine || "";
+  }
 
   choicesBox.innerHTML = "";
   scene.choices().forEach((choice) => {
@@ -446,7 +475,7 @@ const scenes = {
       "你是个斯莱特林，这意味着不管你内心怎么看待这些，你周围的人总是将血统和姓氏当作名牌一样谈论。",
       "所以当然，你知道 Nate 和 Lisa。你们院很多人将这对诡异的组合戏谑称之“那个养了只疯狗的亚洲人”：亚裔的纯血拉文克劳、从美国来的混血格兰芬多，两个女孩毫不避讳地形影不离，唉，听听看，多奇怪啊。",
       "偏偏她们加在一起刚好有能唬人的血统、真会上手揍到你掉牙齿的拳头和蒙骗各院院长相信她们蒙太奇手法借口的成绩单，所以没人能当面这么叫她们；",
-      "偏偏她们行走在霍格沃茨走廊和大厅时会吸引许多爱慕的、艳羡的目光，许多甜蜜的寒暄。尽管院里一些人、同级生坚持说她们那些拥趸和同盟也都目光短浅，但事实就是，她们还没有默默无闻到让人安心忽略、放下叫这些外号的企图的地步。",
+      "偏偏她们行走在霍格沃茨走廊和大厅时会吸引许多爱慕的、艳羡的目光，许多甜蜜的寒暄。尽管院里一些同级生坚持说她们那些拥趸和同盟也都目光短浅，但事实就是，她们还没有默默无闻到让人安心忽略、放下叫这些外号的企图的地步。",
       "你的看法是......",
     ],
     choices: () => [
@@ -478,7 +507,7 @@ const scenes = {
         next: "slytherinSusannaClass",
       },
       {
-        text: "C. 这些你和你周围人家族共同遵守的、按姓氏血统论资排辈的信条，正给这两人带来多少便利呢？你从不觉得这些有什么了不起，甚至有微妙的厌恶别人整日谈论它们，可是眼下这有两个人，到底是在利用这些违反校规，还是用这种方式嘲讽这些东西呢？",
+        text: "C. 这些你和你周围人家族共同遵守的、按姓氏血统论资排辈的信条，正给这两人带来多少便利呢？你从不觉得这些有什么了不起，甚至微妙的厌恶于别人整日谈论它们，可是眼下这有两个人，到底是在利用这些违反校规，还是用这种方式嘲讽这些东西呢？",
         action: () => {
           state.choices.slytherinFirstView = "questioning_hierarchy";
           addAffection("nate", 15);
@@ -492,11 +521,63 @@ const scenes = {
     chapter: "SLYTHERIN · SUSANNA KAYSEN",
     title: "",
     paragraphs: () => [
-      "仍需填入：Susanna Kaysen 作为斯莱特林毕业生、如今任课教授的课堂场景。",
-      "仍需填入：Nate 与 Lisa 在这门课上的表现如何引起斯莱特林学生的注意。",
-      "仍需填入：一次课后，你留下来向 Susanna 问问题；Nate 与 Lisa 也照旧围在老师身边。",
-      "仍需填入：你与 Susanna 围绕一道题 / 一个得分点发生争论，Susanna 的态度比较温和。",
-      "仍需填入：Susanna 表示，如果你现在能把问题全部答对，就给你算满分。",
+      "梅林的胡子，这个新学年虽然才刚开始不久，但霍格沃茨的空气有了什么新东西，至少你和你的同级生能感受到。",
+      "继 Elisa 晚归时哭哭啼啼，Thomas 突然变得沉默寡言之类的事情桩桩件件发生之后，发生在你身上的命运推手是：才在前一晚思考过自己对 Nate 和 Lisa 这对校园红人应该是什么样的态度，第二天，当你早早赶去黑魔法防御课教授 Susanna Kaysen 的教室，想就上一次随堂测的结果争论几分回来，就正好看见这两个人也围在教授身边。",
+      "课表上，格兰芬多的黑魔法防御在半小时前就该结束了，拉文克劳的更是不在今日。这两人果然还是有几分诡谲。",
+    ],
+    choices: () => [
+      {
+        text: "继续",
+        next: "slytherinSusannaAdmiration",
+      },
+    ],
+  },
+
+  slytherinSusannaAdmiration: {
+    chapter: "SLYTHERIN · SUSANNA KAYSEN",
+    title: "",
+    paragraphs: () => [
+      "你不欣赏学生缠着年轻好说话的老师献媚以获取好处的行为，何况这次后者是毕业于斯莱特林 Susanna Kaysen，她的履历之强有力和举止之优雅，都是典型的斯莱特林，让本院的孩子们与有荣焉。",
+    ],
+    choices: () => [
+      {
+        text: "继续",
+        next: "slytherinSusannaGradeMotivation",
+      },
+    ],
+  },
+
+  slytherinSusannaGradeMotivation: {
+    chapter: "SLYTHERIN · SUSANNA KAYSEN",
+    title: "",
+    paragraphs: () => [
+      "不管怎么说，自己的事要紧，上次随堂课你只因为小小的失误才没有得到满分，如果能想办法说服教授帮你改回来，一定会收到母亲的许多温情的称赞和礼物，是的，你仍然在意这个。",
+      "你清了清嗓子引起注意，说道：……",
+    ],
+    choices: () => [
+      {
+        text: "继续",
+        next: "slytherinSusannaPlayerLine",
+      },
+    ],
+  },
+
+  slytherinSusannaPlayerLine: {
+    chapter: "SLYTHERIN · SUSANNA KAYSEN",
+    title: "",
+    paragraphs: () => [],
+    choices: () => [],
+  },
+
+  slytherinSusannaResponse: {
+    chapter: "SLYTHERIN · SUSANNA KAYSEN",
+    title: "",
+    paragraphs: () => [
+      {
+        text: state.choices.slytherinSusannaOpeningLine,
+        className: "player-written-line",
+      },
+      "教授如你所想，微笑着，“当然可以，亲爱的，我也注意到你所犯的失误是十分可惜的，与随堂测中要检验的，巫师对咒语的理解并不相关。然而我无法只是这样改掉你的卷面分数，这恐怕会引起争议，这样吧，现在我用随堂测中的题目的变体重新考核你一次，如果这次你的确做到了满分的水准，那就是你把握住了机会，值得相应的分数。”",
     ],
     choices: () => [
       {
