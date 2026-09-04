@@ -26,9 +26,8 @@ const INITIAL_STATE = {
     satWithNate: null,
     nateFirstApproach: null,
 
-    // 斯莱特林线：Susanna 课后初次主动接近 Nate / Lisa
-    slytherinNateInvitation: null,
-    slytherinLisaNoticedApproach: false,
+    slytherinSusannaDebate: null,
+    slytherinNateThanksStyle: null,
   },
 
   ui: {
@@ -433,9 +432,10 @@ const scenes = {
     chapter: "SLYTHERIN",
     title: "",
     paragraphs: () => [
-      "仍需填入：斯莱特林学生对血统、家族、名气与实力普遍更为敏感的学院日常描写。",
-      "仍需填入：即使主控本人未必热衷这些话题，也因为周围人的谈论，对 Nate Luo 和 Lisa Rowe 的名气、实力与血统背景都有所耳闻。",
-      "仍需填入：作为斯莱特林主控，你比其他学院的主控更多了一层对两人名利、家族与校园位置的观察。",
+      "仍需填入：斯莱特林主控对 Nate Luo 与 Lisa Rowe 的既有认知。",
+      "仍需填入：斯莱特林内部普遍对血统、家族、名气与实力更加门儿清；即使主控自己并不热衷这些，周围人也会像谈论名牌一样谈论这些东西，因此主控早已对 Nate 与 Lisa 的名气、实力和血统小有耳闻。",
+      "仍需填入：这里体现斯莱特林主控比其他学院多一层名利与家世上的观察，但不要因此预设主控本人一定认同这种价值观。",
+      "仍需填入：自然过渡到斯莱特林毕业生 Susanna Kaysen 教授的课程。",
     ],
     choices: () => [
       {
@@ -446,115 +446,86 @@ const scenes = {
   },
 
   slytherinSusannaClass: {
-    chapter: "SLYTHERIN",
+    chapter: "SLYTHERIN · SUSANNA KAYSEN",
     title: "",
     paragraphs: () => [
-      "仍需填入：斯莱特林毕业生 Susanna Kaysen 教授的课程场景。",
-      "仍需填入：Nate 和 Lisa 在这门课上的表现，以及为什么这使身为斯莱特林学生的你真正注意到她们。",
-      "仍需填入：一次课后，你留下来向 Susanna 问问题；Nate 和 Lisa 也照旧围在老师身边。",
+      "仍需填入：Susanna Kaysen 作为斯莱特林毕业生、如今任课教授的课堂场景。",
+      "仍需填入：Nate 与 Lisa 在这门课上的表现如何引起斯莱特林学生的注意。",
+      "仍需填入：一次课后，你留下来向 Susanna 问问题；Nate 与 Lisa 也照旧围在老师身边。",
+      "仍需填入：你与 Susanna 围绕一道题 / 一个得分点发生争论，Susanna 的态度比较温和。",
+      "仍需填入：Susanna 表示，如果你现在能把问题全部答对，就给你算满分。",
     ],
     choices: () => [
       {
         text: "继续",
-        next: "slytherinSusannaDebate",
+        action: () => {
+          state.choices.slytherinSusannaDebate = "full_score_challenge";
+        },
+        next: "slytherinNateHint",
       },
     ],
   },
 
-  slytherinSusannaDebate: {
-    chapter: "SLYTHERIN · SUSANNA",
+  slytherinNateHint: {
+    chapter: "SLYTHERIN · NATE",
     title: "",
     paragraphs: () => [
-      "仍需填入：你和 Susanna 为一个知识点到底该不该给分而争论的具体内容。",
-      "仍需填入：Susanna 温和地提出——如果你现在能把相关问题全部答对，就把这一处算作满分。",
-      "仍需填入：即时问答的过程；你中间有一个疏忽，Nate 悄悄戳了戳你的手心提醒你。",
-      "你答完了。现在，该向她道谢了。",
+      "仍需填入：你开始回答 Susanna 的问题。",
+      "仍需填入：你在中间有一个疏忽的地方，Nate 悄悄戳了戳你的手心，给你提示。",
+      "仍需填入：你顺利把答案补完整，Susanna 如何回应。",
+      "你转向 Nate，道了声谢。你还想顺便把距离拉近一点——",
     ],
     choices: () => [
       {
-        text: "A. 谢谢……请你们去霍格莫德买东西吧？",
+        text: "A. 请你们去霍格莫德买东西吧？",
         action: () => {
-          state.choices.slytherinNateInvitation = "hogsmeade";
-          state.choices.slytherinLisaNoticedApproach = true;
+          state.choices.slytherinNateThanksStyle = "hogsmeade";
           addAffection("nate", 15);
           addAffection("lisa", 10);
         },
-        next: "slytherinAfterThanksHogsmeade",
+        next: "slytherinAfterThanks",
       },
       {
-        text: "B. 谢谢……下次一起在图书馆自习好吗？",
+        text: "B. 下次一起在图书馆自习好吗？",
         action: () => {
-          state.choices.slytherinNateInvitation = "library";
-          state.choices.slytherinLisaNoticedApproach = true;
+          state.choices.slytherinNateThanksStyle = "library";
           addAffection("nate", 20);
           addAffection("lisa", 10);
         },
-        next: "slytherinAfterThanksLibrary",
+        next: "slytherinAfterThanks",
       },
       {
-        text: "C. 谢谢……假期来我家玩好吗？",
+        text: "C. 假期来我家玩好吗？",
         action: () => {
-          state.choices.slytherinNateInvitation = "holiday_home";
-          state.choices.slytherinLisaNoticedApproach = true;
+          state.choices.slytherinNateThanksStyle = "holiday_visit";
           addAffection("nate", 20);
           addAffection("lisa", 10);
         },
-        next: "slytherinAfterThanksHome",
+        next: "slytherinAfterThanks",
       },
     ],
   },
 
-  slytherinAfterThanksHogsmeade: {
+  slytherinAfterThanks: {
     chapter: "SLYTHERIN · NATE / LISA",
     title: "",
     paragraphs: () => [
-      "仍需填入：你邀请她们去霍格莫德买东西后，Nate 的专属反应。",
-      "仍需填入：Nate 对和刚认识的人一起出去很久这件事略有些发怵、觉得有点麻烦的表现。",
-      "仍需填入：Lisa 在三人都在场时观察你主动接近 Nate 的反应；她因为你是斯莱特林、又显得颇会拉近距离，而觉得你这个人还挺有招。",
-      "仍需填入：这一小段三人互动的收束。",
+      "仍需填入：Nate 对你这次主动拉近距离的具体反应。",
+      "仍需填入：若选择霍格莫德，体现 Nate 会觉得和陌生人一起出去很久有点麻烦、也有点怵。",
+      "仍需填入：若选择图书馆自习，体现 Nate 对这种相对轻松、可控的邀请更容易接受。",
+      "仍需填入：若选择假期去你家，体现 Nate 对邀请本身的反应。",
+      "仍需填入：Lisa 因为你是斯莱特林，又主动和她的 Nate 搭话，开始重新打量你。",
+      "仍需填入：如果文案需要，可体现你有意无意借助纯血 / 家族层面的社交方式拉近关系；混血设定下的 Lisa 会觉得这个人还挺有招。",
+      "当前斯莱特林主线暂时写到这里。",
     ],
     choices: () => [
       {
-        text: "继续",
+        text: "结束当前版本",
         action: () => {
-          showModal("正在续写中...", "斯莱特林路线正在续写中...");
-        },
-      },
-    ],
-  },
-
-  slytherinAfterThanksLibrary: {
-    chapter: "SLYTHERIN · NATE / LISA",
-    title: "",
-    paragraphs: () => [
-      "仍需填入：你邀请她们下次一起去图书馆自习后，Nate 的专属反应。",
-      "仍需填入：Lisa 在三人都在场时观察你主动接近 Nate 的反应；她因为你是斯莱特林、又显得颇会拉近距离，而觉得你这个人还挺有招。",
-      "仍需填入：这一小段三人互动的收束。",
-    ],
-    choices: () => [
-      {
-        text: "继续",
-        action: () => {
-          showModal("正在续写中...", "斯莱特林路线正在续写中...");
-        },
-      },
-    ],
-  },
-
-  slytherinAfterThanksHome: {
-    chapter: "SLYTHERIN · NATE / LISA",
-    title: "",
-    paragraphs: () => [
-      "仍需填入：你邀请她们假期来家里玩后，Nate 的专属反应。",
-      "仍需填入：如果后续需要体现主控的家族 / 血统式社交意味，在这里补充具体文本；当前代码不会擅自把斯莱特林主控设定为纯血。",
-      "仍需填入：Lisa 在三人都在场时观察你主动接近 Nate 的反应；她觉得你这个人还挺有招。",
-      "仍需填入：这一小段三人互动的收束。",
-    ],
-    choices: () => [
-      {
-        text: "继续",
-        action: () => {
-          showModal("正在续写中...", "斯莱特林路线正在续写中...");
+          showModal(
+            "正在续写中...",
+            "当前斯莱特林初遇主线已结束。后续剧情正在续写中..."
+          );
         },
       },
     ],
