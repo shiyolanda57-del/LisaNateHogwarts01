@@ -115,22 +115,13 @@
       <div class="drawer-header">
         <div>
           <div class="chapter-label">GAME MENU</div>
-          <h2 id="menu-title">菜单</h2>
+          <h2>菜单</h2>
         </div>
         <button id="drawer-close" class="close-button" type="button" aria-label="关闭">×</button>
       </div>
 
-      <section id="menu-home" class="menu-view">
-        <div class="menu-grid">
-          <button class="menu-tile" type="button" data-menu-target="status">状态</button>
-          <button class="menu-tile" type="button" data-menu-target="save">存档</button>
-          <button class="menu-tile" type="button" data-menu-target="load">读档</button>
-          <button class="menu-tile" type="button" data-menu-target="system">系统</button>
-        </div>
-      </section>
-
-      <section id="menu-status" class="menu-view hidden">
-        <button class="menu-back-button" type="button">← 返回</button>
+      <section class="menu-section">
+        <h3>当前状态</h3>
         <dl class="status-list">
           <div>
             <dt>姓名</dt>
@@ -159,30 +150,23 @@
         </dl>
       </section>
 
-      <section id="menu-save" class="menu-view hidden">
-        <button class="menu-back-button" type="button">← 返回</button>
+      <section class="menu-section">
+        <div class="menu-section-heading">
+          <h3>存档 / 读档</h3>
+          <span>6 个档位</span>
+        </div>
         <div id="save-slots" class="save-slots"></div>
       </section>
 
-      <section id="menu-load" class="menu-view hidden">
-        <button class="menu-back-button" type="button">← 返回</button>
-        <div id="load-slots" class="save-slots"></div>
+      <section class="menu-section menu-actions">
+        <button id="restart-button" class="secondary-button danger-button" type="button">
+          回到开头
+        </button>
       </section>
 
-      <section id="menu-system" class="menu-view hidden">
-        <button class="menu-back-button" type="button">← 返回</button>
-        <div class="system-actions">
-          <button id="system-theme-button" class="secondary-button" type="button">
-            回到初始配色
-          </button>
-          <button id="restart-button" class="secondary-button danger-button" type="button">
-            回到开头
-          </button>
-        </div>
-        <p class="drawer-note">
-          游戏会自动记住当前进度。刷新页面后会回到你最近停留的位置；六个手动存档不会因“回到开头”而删除。
-        </p>
-      </section>
+      <p class="drawer-note">
+        游戏会自动记住当前进度。刷新页面后会回到你最近停留的位置；手动存档不会因“回到开头”而删除。
+      </p>
     </div>
   </aside>
 

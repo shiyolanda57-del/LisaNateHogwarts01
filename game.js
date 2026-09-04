@@ -30,10 +30,6 @@ const INITIAL_STATE = {
     slytherinSusannaDebate: null,
     slytherinSusannaOpeningLine: "",
     slytherinNateThanksStyle: null,
-
-    ravenclawBaselineApplied: false,
-    ravenclawBreakIceChoice: null,
-    ravenclawAfterClassReply: null,
   },
 
   ui: {
@@ -84,16 +80,6 @@ const drawerBackdrop = document.querySelector("#drawer-backdrop");
 const drawerClose = document.querySelector("#drawer-close");
 const restartButton = document.querySelector("#restart-button");
 const saveSlots = document.querySelector("#save-slots");
-const loadSlots = document.querySelector("#load-slots");
-const menuTitle = document.querySelector("#menu-title");
-const menuHome = document.querySelector("#menu-home");
-const menuStatus = document.querySelector("#menu-status");
-const menuSave = document.querySelector("#menu-save");
-const menuLoad = document.querySelector("#menu-load");
-const menuSystem = document.querySelector("#menu-system");
-const menuTiles = document.querySelectorAll(".menu-tile");
-const menuBackButtons = document.querySelectorAll(".menu-back-button");
-const systemThemeButton = document.querySelector("#system-theme-button");
 
 const statusName = document.querySelector("#status-name");
 const statusBirthday = document.querySelector("#status-birthday");
@@ -189,79 +175,8 @@ themeButton.addEventListener("click", () => {
 menuButton.addEventListener("click", () => {
   updateStatusPanel();
   renderSaveSlots();
-  showMenuView("home");
   menuDrawer.classList.add("open");
   menuDrawer.setAttribute("aria-hidden", "false");
-});
-
-function showMenuView(viewName) {
-  const views = {
-    home: menuHome,
-    status: menuStatus,
-    save: menuSave,
-    load: menuLoad,
-    system: menuSystem,
-  };
-
-  Object.values(views).forEach((view) => {
-    view.classList.add("hidden");
-  });
-
-  views[viewName].classList.remove("hidden");
-
-  const titles = {
-    home: "菜单",
-    status: "状态",
-    save: "存档",
-    load: "读档",
-    system: "系统",
-  };
-  menuTitle.textContent = titles[viewName];
-
-  if (viewName === "status") {
-    updateStatusPanel();
-  }
-
-  if (viewName === "save" || viewName === "load") {
-    renderSaveSlots();
-  }
-
-  if (viewName === "system") {
-    syncSystemThemeButton();
-  }
-}
-
-menuTiles.forEach((button) => {
-  button.addEventListener("click", () => {
-    showMenuView(button.dataset.menuTarget);
-  });
-});
-
-menuBackButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    showMenuView("home");
-  });
-});
-
-function syncSystemThemeButton() {
-  if (!state.player.house) {
-    systemThemeButton.textContent = "初始配色";
-    systemThemeButton.disabled = true;
-    return;
-  }
-
-  systemThemeButton.disabled = false;
-  systemThemeButton.textContent = state.ui.usingNeutralTheme
-    ? "恢复学院配色"
-    : "回到初始配色";
-}
-
-systemThemeButton.addEventListener("click", () => {
-  if (!state.player.house) return;
-  state.ui.usingNeutralTheme = !state.ui.usingNeutralTheme;
-  applyTheme();
-  syncSystemThemeButton();
-  writeAutosave();
 });
 
 function closeDrawer() {
@@ -410,79 +325,69 @@ function deleteSlot(slotNumber) {
   renderSaveSlots();
 }
 
-function buildSlotCard(slot, mode) {
-  const payload = readSave(SAVE_SLOT_PREFIX + slot);
-  const card = document.createElement("div");
-  card.className = "save-slot";
+function renderSaveSlots() {
+  saveSlots.innerHTML = "";
 
-  const top = document.createElement("div");
-  top.className = "save-slot-top";
+  for (let slot = 1; slot <= SAVE_SLOT_COUNT; slot++) {
+    const payload = readSave(SAVE_SLOT_PREFIX + slot);
+    const card = document.createElement("div");
+    card.className = "save-slot";
 
-  const info = document.createElement("div");
-  const title = document.createElement("p");
-  title.className = "save-slot-title";
-  title.textContent = `存档 ${slot}`;
+    const top = document.createElement("div");
+    top.className = "save-slot-top";
 
-  const meta = document.createElement("p");
-  meta.className = "save-slot-meta";
+    const info = document.createElement("div");
+    const title = document.createElement("p");
+    title.className = "save-slot-title";
+    title.textContent = `存档 ${slot}`;
 
-  if (payload) {
-    const savedState = payload.state || {};
-    const player = savedState.player || {};
-    const savedName = [player.firstName, player.lastName].filter(Boolean).join(" ");
-    const house = player.house ? HOUSE_NAMES[player.house] : "未分院";
-    meta.textContent =
-      `${savedName || "未命名"} · ${house} · ${sceneDisplayName(payload.sceneId)} · ${formatSaveTime(payload.savedAt)}`;
-  } else {
-    meta.textContent = "空档位";
-  }
+    const meta = document.createElement("p");
+    meta.className = "save-slot-meta";
 
-  info.appendChild(title);
-  info.appendChild(meta);
-  top.appendChild(info);
-  card.appendChild(top);
+    if (payload) {
+      const savedState = payload.state || {};
+      const player = savedState.player || {};
+      const savedName = [player.firstName, player.lastName].filter(Boolean).join(" ");
+      const house = player.house ? HOUSE_NAMES[player.house] : "未分院";
+      meta.textContent =
+        `${savedName || "未命名"} · ${house} · ${sceneDisplayName(payload.sceneId)} · ${formatSaveTime(payload.savedAt)}`;
+    } else {
+      meta.textContent = "空档位";
+    }
 
-  const actions = document.createElement("div");
-  actions.className = "save-slot-actions";
+    info.appendChild(title);
+    info.appendChild(meta);
+    top.appendChild(info);
+    card.appendChild(top);
 
-  if (mode === "save") {
+    const actions = document.createElement("div");
+    actions.className = "save-slot-actions";
+
     const saveButton = document.createElement("button");
-    saveButton.className = "slot-button save-slot-action";
+    saveButton.className = "slot-button";
     saveButton.type = "button";
     saveButton.textContent = payload ? "覆盖" : "存档";
     saveButton.addEventListener("click", () => saveToSlot(slot));
     actions.appendChild(saveButton);
 
-    const deleteButton = document.createElement("button");
-    deleteButton.className = "slot-button delete-slot-action";
-    deleteButton.type = "button";
-    deleteButton.textContent = "删除";
-    deleteButton.disabled = !payload;
-    deleteButton.addEventListener("click", () => deleteSlot(slot));
-    actions.appendChild(deleteButton);
-  }
-
-  if (mode === "load") {
     const loadButton = document.createElement("button");
-    loadButton.className = "slot-button load-slot-action";
+    loadButton.className = "slot-button";
     loadButton.type = "button";
     loadButton.textContent = "读档";
     loadButton.disabled = !payload;
     loadButton.addEventListener("click", () => loadFromSlot(slot));
     actions.appendChild(loadButton);
-  }
 
-  card.appendChild(actions);
-  return card;
-}
+    const deleteButton = document.createElement("button");
+    deleteButton.className = "slot-button";
+    deleteButton.type = "button";
+    deleteButton.textContent = "删除";
+    deleteButton.disabled = !payload;
+    deleteButton.addEventListener("click", () => deleteSlot(slot));
+    actions.appendChild(deleteButton);
 
-function renderSaveSlots() {
-  saveSlots.innerHTML = "";
-  loadSlots.innerHTML = "";
-
-  for (let slot = 1; slot <= SAVE_SLOT_COUNT; slot++) {
-    saveSlots.appendChild(buildSlotCard(slot, "save"));
-    loadSlots.appendChild(buildSlotCard(slot, "load"));
+    card.appendChild(actions);
+    saveSlots.appendChild(card);
   }
 }
 
@@ -755,12 +660,8 @@ const scenes = {
       {
         text: "继续",
         action: () => {
-          if (!state.choices.ravenclawBaselineApplied) {
-            addAffection("nate", 30);
-            state.choices.ravenclawBaselineApplied = true;
-          }
+          showModal("正在续写中...", "拉文克劳路线正在续写中...");
         },
-        next: "ravenclawHistory",
       },
     ],
   },
@@ -776,173 +677,6 @@ const scenes = {
         text: "继续",
         action: () => {
           showModal("正在续写中...", "赫奇帕奇路线正在续写中...");
-        },
-      },
-    ],
-  },
-
-  ravenclawHistory: {
-    chapter: "RAVENCLAW",
-    title: "",
-    paragraphs: () => [
-      "仍需填入：一年级刚入学时，你和 Nate 曾经很亲近的前情。",
-      "仍需填入：那时 Nate 还没有认识跨院的 Lisa；你和 Nate 都早慧，脑回路相似，有一种双生镜像般的默契。",
-      "仍需填入：你们曾经有一丝机会成为真正的挚友，但那个机会后来像珠蚌一样合上了。",
-      "仍需填入：Nate 很快把更多的注意力转向 Lisa。你知道 Lisa 更外放、更直观地有魅力，也明白为什么她能吸引 Nate；与此同时，你对 Lisa 既有艳羡、嫉妒，也承认她确实有魅力。",
-      "仍需填入：对 Nate，你并不只是单纯地怨恨。某种意义上，你甚至觉得 Lisa 陪着她也很好；但这个曾经关闭的机会，在这个学年重新出现了。",
-      "【前情状态：Nate 对你原本已有 30 好感度。】",
-    ],
-    choices: () => [
-      {
-        text: "继续",
-        next: "ravenclawClassGrouping",
-      },
-    ],
-  },
-
-  ravenclawClassGrouping: {
-    chapter: "RAVENCLAW · NATE",
-    title: "",
-    paragraphs: () => [
-      "仍需填入：开学后的某一节拉文克劳课程，以及课堂分组的场景描写。",
-      "仍需填入：你和 Nate 被分到同一组。久违地坐得这样近，她先主动和你说了话，像是在试图把什么重新接起来。",
-      "你怎么回答？",
-    ],
-    choices: () => [
-      {
-        text: "A. 回答她，冷酷的。",
-        action: () => {
-          state.choices.ravenclawBreakIceChoice = "cold";
-          addAffection("nate", 30);
-        },
-        next: "ravenclawColdReaction",
-      },
-      {
-        text: "B. 回答她，让她知道刚入学时转瞬即逝的友谊对自己没有产生任何影响。",
-        action: () => {
-          state.choices.ravenclawBreakIceChoice = "unaffected";
-          addAffection("nate", 30);
-        },
-        next: "ravenclawColdReaction",
-      },
-      {
-        text: "C. 回答她，并潇洒地说：嘿，我知道这听起来很突然，等下你想一起去黑湖边散散步吗？别说你有其他计划，我会把你借走的……而这一切都是为了不久后当 Lisa 不找她玩了，再狠狠离开她。",
-        action: () => {
-          state.choices.ravenclawBreakIceChoice = "black_lake_invite";
-          addAffection("nate", 30);
-        },
-        next: "ravenclawBlackLakeReaction",
-      },
-      {
-        text: "D. 不回答她，去和另一边的女生说话，并完全不注意她的动静。",
-        action: () => {
-          state.choices.ravenclawBreakIceChoice = "ignore";
-          addAffection("nate", 30);
-        },
-        next: "ravenclawIgnoreReaction",
-      },
-    ],
-  },
-
-  ravenclawColdReaction: {
-    chapter: "RAVENCLAW · NATE",
-    title: "",
-    paragraphs: () => [
-      "Nate 只是“oh”了一声，笑笑地看了你一眼，乖乖地回去做自己的了。",
-      "仍需填入：这里关于 Nate 魅力形象的描写。",
-      "她做自己的事情之后，你刚刚那个约她一起的念头又冒出来了。看着她的样子，你竟然不再觉得这是愚蠢至极的——她看起来会答应任何事。",
-      "但你没有开口。",
-    ],
-    choices: () => [
-      {
-        text: "继续",
-        next: "ravenclawNateInvitesHogsmeade",
-      },
-    ],
-  },
-
-  ravenclawIgnoreReaction: {
-    chapter: "RAVENCLAW · NATE",
-    title: "",
-    paragraphs: () => [
-      "仍需填入：你完全不回答 Nate、转而和另一边的女生说话时，课堂继续的场景。",
-      "仍需填入：Nate 没有因此恼怒，她仍然以一种包容而近乎宠爱的方式对待你的拒绝。",
-      "下课以后，她又一次尝试把这层冰敲开。",
-    ],
-    choices: () => [
-      {
-        text: "继续",
-        next: "ravenclawNateInvitesHogsmeade",
-      },
-    ],
-  },
-
-  ravenclawNateInvitesHogsmeade: {
-    chapter: "RAVENCLAW · NATE",
-    title: "",
-    paragraphs: () => [
-      "下课后，Nate 转过来对你说：“hey，周日想一起去霍格莫德吃饭吗？”",
-    ],
-    choices: () => [
-      {
-        text: "A. 就我们俩？",
-        action: () => {
-          state.choices.ravenclawAfterClassReply = "just_us";
-        },
-        next: "ravenclawHogsmeadeClarification",
-      },
-      {
-        text: "B. 那个谁不会也……",
-        action: () => {
-          state.choices.ravenclawAfterClassReply = "will_lisa_be_there";
-        },
-        next: "ravenclawHogsmeadeClarification",
-      },
-    ],
-  },
-
-  ravenclawHogsmeadeClarification: {
-    chapter: "RAVENCLAW · NATE / LISA",
-    title: "",
-    paragraphs: () => [
-      "Nate 说：“我们俩，和我的好朋友 Lisa 一起，她会超喜欢你的。”",
-      "仍需填入：这一刻你对重新进入 Nate 的生活、以及 Lisa 被自然带入你们之间的感受。",
-      "仍需填入：之后 Nate 和你回到普通朋友关系，并逐渐邀请你与 Lisa 三个人一起行动。",
-      "仍需填入：未来可从这里并入各学院共享的霍格莫德等共同剧情。",
-      "当前拉文克劳主线暂时写到这里。",
-    ],
-    choices: () => [
-      {
-        text: "结束当前版本",
-        action: () => {
-          showModal(
-            "正在续写中...",
-            "当前拉文克劳初遇主线已结束。后续剧情正在续写中..."
-          );
-        },
-      },
-    ],
-  },
-
-  ravenclawBlackLakeReaction: {
-    chapter: "RAVENCLAW · NATE",
-    title: "",
-    paragraphs: () => [
-      "Nate 罕见地露出灿烂的笑容：“我很乐意。”",
-      "仍需填入：她答应黑湖散步时的具体反应与 Nate 的魅力描写。",
-      "她接着说，等周日你们俩可以先一起散步，然后还可以去找 Lisa，三个人一起去霍格莫德小聚。",
-      "仍需填入：你原本带着一点报复意味的邀约，在她毫无戒备的接受里产生了怎样的变化。",
-      "仍需填入：之后 Nate 和你重新回到普通朋友关系，并自然把 Lisa 带进共同活动。",
-      "当前拉文克劳主线暂时写到这里。",
-    ],
-    choices: () => [
-      {
-        text: "结束当前版本",
-        action: () => {
-          showModal(
-            "正在续写中...",
-            "当前拉文克劳初遇主线已结束。后续剧情正在续写中..."
-          );
         },
       },
     ],
