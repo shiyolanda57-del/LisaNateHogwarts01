@@ -18,8 +18,8 @@
       <button id="theme-button" class="utility-button hidden" type="button">
         回到初始配色
       </button>
-      <button id="status-button" class="utility-button hidden" type="button">
-        角色状态
+      <button id="menu-button" class="utility-button" type="button">
+        MENU
       </button>
     </div>
   </header>
@@ -108,48 +108,78 @@
     </article>
   </main>
 
-  <aside id="status-drawer" class="drawer" aria-hidden="true">
-    <button id="drawer-backdrop" class="drawer-backdrop" type="button" aria-label="关闭状态面板"></button>
+  <aside id="game-menu" class="drawer" aria-hidden="true">
+    <button id="menu-backdrop" class="drawer-backdrop" type="button" aria-label="关闭游戏菜单"></button>
 
-    <div class="drawer-panel">
+    <div class="drawer-panel menu-panel">
       <div class="drawer-header">
         <div>
-          <div class="chapter-label">PLAYER RECORD</div>
-          <h2>角色状态</h2>
+          <div class="chapter-label">GAME MENU</div>
+          <h2>游戏菜单</h2>
         </div>
-        <button id="drawer-close" class="close-button" type="button" aria-label="关闭">×</button>
+        <button id="menu-close" class="close-button" type="button" aria-label="关闭">×</button>
       </div>
 
-      <dl class="status-list">
-        <div>
-          <dt>姓名</dt>
-          <dd id="status-name">未填写</dd>
-        </div>
-        <div>
-          <dt>生日</dt>
-          <dd id="status-birthday">未填写</dd>
-        </div>
-        <div>
-          <dt>学院</dt>
-          <dd id="status-house">未选择</dd>
-        </div>
-        <div>
-          <dt>血统背景</dt>
-          <dd id="status-blood">未确定</dd>
-        </div>
-        <div>
-          <dt>Lisa 好感度</dt>
-          <dd id="status-lisa">0</dd>
-        </div>
-        <div>
-          <dt>Nate 好感度</dt>
-          <dd id="status-nate">0</dd>
-        </div>
-      </dl>
+      <nav class="menu-tabs" aria-label="游戏菜单分页">
+        <button class="menu-tab active" data-menu-tab="status" type="button">状态</button>
+        <button class="menu-tab" data-menu-tab="save" type="button">存档</button>
+        <button class="menu-tab" data-menu-tab="load" type="button">读档</button>
+        <button class="menu-tab" data-menu-tab="system" type="button">系统</button>
+      </nav>
 
-      <p class="drawer-note">
-        这里是玩家主动查看的信息界面。平时剧情页面不会直接显示好感度。
-      </p>
+      <section class="menu-view active" data-menu-view="status">
+        <dl class="status-list">
+          <div>
+            <dt>姓名</dt>
+            <dd id="status-name">未填写</dd>
+          </div>
+          <div>
+            <dt>生日</dt>
+            <dd id="status-birthday">未填写</dd>
+          </div>
+          <div>
+            <dt>学院</dt>
+            <dd id="status-house">未选择</dd>
+          </div>
+          <div>
+            <dt>血统背景</dt>
+            <dd id="status-blood">未确定</dd>
+          </div>
+          <div>
+            <dt>Lisa 好感度</dt>
+            <dd id="status-lisa">0</dd>
+          </div>
+          <div>
+            <dt>Nate 好感度</dt>
+            <dd id="status-nate">0</dd>
+          </div>
+        </dl>
+
+        <p class="drawer-note">
+          当前状态只会在你主动打开菜单时显示。剧情选项本身不会提示好感度变化。
+        </p>
+      </section>
+
+      <section class="menu-view" data-menu-view="save">
+        <p class="menu-intro">选择一个档位保存当前进度。已有档位可以覆盖。</p>
+        <div id="save-slots" class="save-slots"></div>
+      </section>
+
+      <section class="menu-view" data-menu-view="load">
+        <p class="menu-intro">选择一个已有存档，回到保存时的剧情位置。</p>
+        <div id="load-slots" class="save-slots"></div>
+      </section>
+
+      <section class="menu-view" data-menu-view="system">
+        <div class="system-actions">
+          <button id="restart-button" class="menu-action-button danger" type="button">
+            回到开头
+          </button>
+          <p class="drawer-note">
+            回到开头只会重置当前进行中的游戏，不会删除六个手动存档。
+          </p>
+        </div>
+      </section>
     </div>
   </aside>
 

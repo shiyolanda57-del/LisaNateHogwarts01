@@ -517,3 +517,173 @@ h1 {
   border-left: 2px solid var(--accent);
   font-style: italic;
 }
+
+
+.menu-panel {
+  width: min(470px, 94vw);
+}
+
+.menu-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 26px;
+}
+
+.menu-tab {
+  appearance: none;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--page-bg);
+  color: var(--muted);
+  padding: 9px 8px;
+  cursor: pointer;
+  font-family: Arial, "Noto Sans SC", sans-serif;
+  font-size: 12px;
+}
+
+.menu-tab.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.menu-view {
+  display: none;
+}
+
+.menu-view.active {
+  display: block;
+}
+
+.menu-intro {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.save-slots {
+  display: grid;
+  gap: 12px;
+}
+
+.save-slot {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card-bg);
+  padding: 15px;
+}
+
+.save-slot-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.save-slot-number {
+  font-family: Arial, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+.save-slot-title {
+  font-size: 15px;
+}
+
+.save-slot-empty {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.save-slot-meta {
+  display: grid;
+  gap: 5px;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.save-slot-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.slot-button,
+.menu-action-button {
+  appearance: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--page-bg);
+  color: var(--text);
+  padding: 9px 12px;
+  cursor: pointer;
+  font-family: Arial, "Noto Sans SC", sans-serif;
+  font-size: 12px;
+}
+
+.slot-button.primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.slot-button:disabled {
+  opacity: 0.42;
+  cursor: default;
+}
+
+.slot-button.danger,
+.menu-action-button.danger {
+  color: #a22b35;
+}
+
+.system-actions {
+  display: grid;
+  gap: 10px;
+}
+
+.menu-action-button {
+  width: 100%;
+  padding: 14px 16px;
+  text-align: center;
+}
+
+.autosave-indicator {
+  position: fixed;
+  left: 18px;
+  bottom: 16px;
+  z-index: 15;
+  color: var(--muted);
+  font-family: Arial, "Noto Sans SC", sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  opacity: 0;
+  transition: opacity 180ms ease;
+  pointer-events: none;
+}
+
+.autosave-indicator.visible {
+  opacity: 0.78;
+}
+
+@media (max-width: 520px) {
+  .menu-tabs {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .save-slot-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .slot-button {
+    width: 100%;
+  }
+}

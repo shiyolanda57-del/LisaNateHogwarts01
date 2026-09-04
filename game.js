@@ -38,6 +38,14 @@ const INITIAL_STATE = {
 };
 
 let state = structuredClone(INITIAL_STATE);
+let currentSceneId = "opening";
+
+const STORAGE_KEYS = {
+  auto: "lisaNateHogwarts:auto:v1",
+  slotPrefix: "lisaNateHogwarts:slot:v1:",
+};
+
+const SAVE_SLOT_COUNT = 6;
 
 const HOUSE_NAMES = {
   gryffindor: "格兰芬多",
@@ -68,11 +76,16 @@ const customLineForm = document.querySelector("#custom-line-form");
 const customLineInput = document.querySelector("#custom-line-input");
 
 const themeButton = document.querySelector("#theme-button");
-const statusButton = document.querySelector("#status-button");
+const menuButton = document.querySelector("#menu-button");
 
-const statusDrawer = document.querySelector("#status-drawer");
-const drawerBackdrop = document.querySelector("#drawer-backdrop");
-const drawerClose = document.querySelector("#drawer-close");
+const gameMenu = document.querySelector("#game-menu");
+const menuBackdrop = document.querySelector("#menu-backdrop");
+const menuClose = document.querySelector("#menu-close");
+const menuTabs = [...document.querySelectorAll(".menu-tab")];
+const menuViews = [...document.querySelectorAll(".menu-view")];
+const saveSlotsBox = document.querySelector("#save-slots");
+const loadSlotsBox = document.querySelector("#load-slots");
+const restartButton = document.querySelector("#restart-button");
 
 const statusName = document.querySelector("#status-name");
 const statusBirthday = document.querySelector("#status-birthday");
@@ -139,7 +152,6 @@ function updateStatusPanel() {
   statusLisa.textContent = state.affection.lisa;
   statusNate.textContent = state.affection.nate;
 
-  statusButton.classList.toggle("hidden", !fullName());
   themeButton.classList.toggle("hidden", !state.player.house);
 }
 
@@ -164,21 +176,344 @@ function chooseHouse(house) {
 themeButton.addEventListener("click", () => {
   state.ui.usingNeutralTheme = !state.ui.usingNeutralTheme;
   applyTheme();
+  persistAutoProgress();
 });
 
-statusButton.addEventListener("click", () => {
+function openMenu(tab = "status") {
   updateStatusPanel();
-  statusDrawer.classList.add("open");
-  statusDrawer.setAttribute("aria-hidden", "false");
-});
-
-function closeDrawer() {
-  statusDrawer.classList.remove("open");
-  statusDrawer.setAttribute("aria-hidden", "true");
+  renderSaveSlots();
+  switchMenuTab(tab);
+  gameMenu.classList.add("open");
+  gameMenu.setAttribute("aria-hidden", "false");
 }
 
-drawerBackdrop.addEventListener("click", closeDrawer);
-drawerClose.addEventListener("click", closeDrawer);
+function closeMenu() {
+  gameMenu.classList.remove("open");
+  gameMenu.setAttribute("aria-hidden", "true");
+}
+
+function switchMenuTab(tabName) {
+  menuTabs.forEach((button) => {
+    button.classList.toggle("active", button.dataset.menuTab === tabName);
+  });
+
+  menuViews.forEach((view) => {
+    view.classList.toggle("active", view.dataset.menuView === tabName);
+  });
+
+  if (tabName === "save" || tabName === "load") {
+    renderSaveSlots();
+  }
+}
+
+menuButton.addEventListener("click", () => openMenu("status"));
+menuBackdrop.addEventListener("click", closeMenu);
+menuClose.addEventListener("click", closeMenu);
+
+menuTabs.forEach((button) => {
+  button.addEventListener("click", () => {
+    switchMenuTab(button.dataset.menuTab);
+  });
+});
+
+function cloneSerializable(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function makeSnapshot() {
+  return {
+    version: 1,
+    sceneId: currentSceneId,
+    state: cloneSerializable(state),
+    savedAt: new Date().toISOString(),
+  };
+}
+
+function safeParse(raw) {
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function persistAutoProgress() {
+  try {
+    localStorage.setItem(STORAGE_KEYS.auto, JSON.stringify(makeSnapshot()));
+    showAutosaveIndicator();
+  } catch (error) {
+    console.warn("自动保存失败：", error);
+  }
+}
+
+function readAutoProgress() {
+  try {
+    return safeParse(localStorage.getItem(STORAGE_KEYS.auto));
+  } catch {
+    return null;
+  }
+}
+
+function slotKey(slotNumber) {
+  return `${STORAGE_KEYS.slotPrefix}${slotNumber}`;
+}
+
+function readSlot(slotNumber) {
+  try {
+    return safeParse(localStorage.getItem(slotKey(slotNumber)));
+  } catch {
+    return null;
+  }
+}
+
+function writeSlot(slotNumber) {
+  const existing = readSlot(slotNumber);
+
+  if (
+    existing &&
+    !window.confirm(`档位 ${slotNumber} 已有存档。要覆盖它吗？`)
+  ) {
+    return;
+  }
+
+  try {
+    localStorage.setItem(slotKey(slotNumber), JSON.stringify(makeSnapshot()));
+    renderSaveSlots();
+  } catch (error) {
+    window.alert("存档失败。浏览器可能禁止了本地存储。");
+    console.error(error);
+  }
+}
+
+function deleteSlot(slotNumber) {
+  const existing = readSlot(slotNumber);
+  if (!existing) return;
+
+  if (!window.confirm(`确定删除档位 ${slotNumber} 吗？`)) return;
+
+  localStorage.removeItem(slotKey(slotNumber));
+  renderSaveSlots();
+}
+
+function mergeLoadedState(savedState) {
+  const base = structuredClone(INITIAL_STATE);
+
+  return {
+    ...base,
+    ...savedState,
+    player: {
+      ...base.player,
+      ...(savedState?.player || {}),
+    },
+    affection: {
+      ...base.affection,
+      ...(savedState?.affection || {}),
+    },
+    peakAffection: {
+      ...base.peakAffection,
+      ...(savedState?.peakAffection || {}),
+    },
+    choices: {
+      ...base.choices,
+      ...(savedState?.choices || {}),
+    },
+    ui: {
+      ...base.ui,
+      ...(savedState?.ui || {}),
+    },
+  };
+}
+
+function restoreSnapshot(snapshot, { persist = true } = {}) {
+  if (!snapshot || !snapshot.sceneId || !scenes[snapshot.sceneId]) {
+    return false;
+  }
+
+  state = mergeLoadedState(snapshot.state || {});
+  currentSceneId = snapshot.sceneId;
+
+  applyTheme();
+  updateStatusPanel();
+  renderScene(currentSceneId, { persist });
+
+  return true;
+}
+
+function loadSlot(slotNumber) {
+  const snapshot = readSlot(slotNumber);
+  if (!snapshot) return;
+
+  if (!window.confirm(`读取档位 ${slotNumber}？当前未手动存档的进度会被替换。`)) {
+    return;
+  }
+
+  closeMenu();
+  restoreSnapshot(snapshot, { persist: true });
+}
+
+function formatSaveTime(isoString) {
+  if (!isoString) return "时间未知";
+
+  const date = new Date(isoString);
+  if (Number.isNaN(date.getTime())) return "时间未知";
+
+  return new Intl.DateTimeFormat("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
+function sceneDisplayName(sceneId) {
+  const scene = scenes[sceneId];
+  if (!scene) return sceneId || "未知位置";
+
+  return scene.chapter || scene.title || "剧情进行中";
+}
+
+function playerNameFromSnapshot(snapshot) {
+  const player = snapshot?.state?.player || {};
+  const name = [player.firstName, player.lastName]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+
+  return name || "未命名";
+}
+
+function houseNameFromSnapshot(snapshot) {
+  const house = snapshot?.state?.player?.house;
+  return house ? HOUSE_NAMES[house] : "未分院";
+}
+
+function createSlotCard(slotNumber, mode) {
+  const snapshot = readSlot(slotNumber);
+
+  const card = document.createElement("article");
+  card.className = "save-slot";
+
+  const header = document.createElement("div");
+  header.className = "save-slot-header";
+
+  const slotLabel = document.createElement("span");
+  slotLabel.className = "save-slot-number";
+  slotLabel.textContent = `SLOT ${String(slotNumber).padStart(2, "0")}`;
+
+  const title = document.createElement("strong");
+  title.className = "save-slot-title";
+  title.textContent = snapshot ? playerNameFromSnapshot(snapshot) : "空档位";
+
+  header.append(slotLabel, title);
+  card.appendChild(header);
+
+  if (snapshot) {
+    const meta = document.createElement("div");
+    meta.className = "save-slot-meta";
+
+    const line1 = document.createElement("span");
+    line1.textContent = `${houseNameFromSnapshot(snapshot)} · ${sceneDisplayName(snapshot.sceneId)}`;
+
+    const line2 = document.createElement("span");
+    line2.textContent = `保存于 ${formatSaveTime(snapshot.savedAt)}`;
+
+    meta.append(line1, line2);
+    card.appendChild(meta);
+  } else {
+    const empty = document.createElement("p");
+    empty.className = "save-slot-empty";
+    empty.textContent = "这里还没有存档。";
+    card.appendChild(empty);
+  }
+
+  const actions = document.createElement("div");
+  actions.className = "save-slot-actions";
+
+  if (mode === "save") {
+    const saveButton = document.createElement("button");
+    saveButton.type = "button";
+    saveButton.className = "slot-button primary";
+    saveButton.textContent = snapshot ? "覆盖" : "保存";
+    saveButton.addEventListener("click", () => writeSlot(slotNumber));
+    actions.appendChild(saveButton);
+  }
+
+  if (mode === "load") {
+    const loadButton = document.createElement("button");
+    loadButton.type = "button";
+    loadButton.className = "slot-button primary";
+    loadButton.textContent = "读取";
+    loadButton.disabled = !snapshot;
+    loadButton.addEventListener("click", () => loadSlot(slotNumber));
+    actions.appendChild(loadButton);
+  }
+
+  const deleteButton = document.createElement("button");
+  deleteButton.type = "button";
+  deleteButton.className = "slot-button danger";
+  deleteButton.textContent = "删除";
+  deleteButton.disabled = !snapshot;
+  deleteButton.addEventListener("click", () => deleteSlot(slotNumber));
+  actions.appendChild(deleteButton);
+
+  card.appendChild(actions);
+  return card;
+}
+
+function renderSaveSlots() {
+  saveSlotsBox.innerHTML = "";
+  loadSlotsBox.innerHTML = "";
+
+  for (let slot = 1; slot <= SAVE_SLOT_COUNT; slot += 1) {
+    saveSlotsBox.appendChild(createSlotCard(slot, "save"));
+    loadSlotsBox.appendChild(createSlotCard(slot, "load"));
+  }
+}
+
+let autosaveIndicatorTimer = null;
+
+function showAutosaveIndicator() {
+  let indicator = document.querySelector("#autosave-indicator");
+
+  if (!indicator) {
+    indicator = document.createElement("div");
+    indicator.id = "autosave-indicator";
+    indicator.className = "autosave-indicator";
+    indicator.textContent = "AUTO SAVE";
+    document.body.appendChild(indicator);
+  }
+
+  indicator.classList.add("visible");
+
+  clearTimeout(autosaveIndicatorTimer);
+  autosaveIndicatorTimer = setTimeout(() => {
+    indicator.classList.remove("visible");
+  }, 900);
+}
+
+function restartGame() {
+  if (
+    !window.confirm(
+      "确定回到游戏开头吗？当前进行中的自动进度会被重置，但六个手动存档会保留。"
+    )
+  ) {
+    return;
+  }
+
+  state = structuredClone(INITIAL_STATE);
+  currentSceneId = "opening";
+
+  try {
+    localStorage.removeItem(STORAGE_KEYS.auto);
+  } catch {}
+
+  closeMenu();
+  applyTheme();
+  updateStatusPanel();
+  renderScene("opening", { persist: true });
+}
+
+restartButton.addEventListener("click", restartGame);
 
 function showModal(title, text) {
   modalTitle.textContent = title;
@@ -188,6 +523,35 @@ function showModal(title, text) {
 
 modalClose.addEventListener("click", () => {
   modal.classList.add("hidden");
+});
+
+birthMonthInput.addEventListener("input", () => {
+  state.player.birthMonth = birthMonthInput.value
+    ? Number(birthMonthInput.value)
+    : null;
+  persistAutoProgress();
+});
+
+birthDayInput.addEventListener("input", () => {
+  state.player.birthDay = birthDayInput.value
+    ? Number(birthDayInput.value)
+    : null;
+  persistAutoProgress();
+});
+
+firstNameInput.addEventListener("input", () => {
+  state.player.firstName = firstNameInput.value;
+  persistAutoProgress();
+});
+
+lastNameInput.addEventListener("input", () => {
+  state.player.lastName = lastNameInput.value;
+  persistAutoProgress();
+});
+
+customLineInput.addEventListener("input", () => {
+  state.choices.slytherinSusannaOpeningLine = customLineInput.value;
+  persistAutoProgress();
 });
 
 birthdayForm.addEventListener("submit", (event) => {
@@ -272,13 +636,15 @@ function makeChoiceButton(choice) {
   return button;
 }
 
-function renderScene(sceneId) {
+function renderScene(sceneId, { persist = true } = {}) {
   const scene = scenes[sceneId];
 
   if (!scene) {
     console.error(`未找到场景：${sceneId}`);
     return;
   }
+
+  currentSceneId = sceneId;
 
   chapterLabel.textContent = scene.chapter || "";
   sceneTitle.textContent = scene.title || "";
@@ -304,6 +670,16 @@ function renderScene(sceneId) {
     sceneId !== "slytherinSusannaPlayerLine"
   );
 
+  if (sceneId === "birthdayScene") {
+    birthMonthInput.value = state.player.birthMonth || "";
+    birthDayInput.value = state.player.birthDay || "";
+  }
+
+  if (sceneId === "nameScene") {
+    firstNameInput.value = state.player.firstName || "";
+    lastNameInput.value = state.player.lastName || "";
+  }
+
   if (sceneId === "slytherinSusannaPlayerLine") {
     customLineInput.value = state.choices.slytherinSusannaOpeningLine || "";
   }
@@ -315,6 +691,10 @@ function renderScene(sceneId) {
 
   window.scrollTo({ top: 0, behavior: "smooth" });
   updateStatusPanel();
+
+  if (persist) {
+    persistAutoProgress();
+  }
 }
 
 const scenes = {
@@ -1027,4 +1407,10 @@ function evaluateEnding() {
 
 applyTheme();
 updateStatusPanel();
-renderScene("opening");
+renderSaveSlots();
+
+const autoProgress = readAutoProgress();
+
+if (!restoreSnapshot(autoProgress, { persist: false })) {
+  renderScene("opening", { persist: true });
+}
